@@ -41,13 +41,14 @@ const allEmployees: Record<string, any> = {
   },
 };
 
-const documents = [
-  { id: "1", name: "Citizenship Certificate", type: "Citizenship", uploadedAt: "2023-01-10", status: "Verified" as const, fileSize: "2.4 MB" },
-  { id: "2", name: "PAN Card", type: "PAN", uploadedAt: "2023-01-10", status: "Verified" as const, fileSize: "1.1 MB" },
-  { id: "3", name: "Bachelor's Degree", type: "Certificate", uploadedAt: "2023-01-12", status: "Pending" as const, fileSize: "3.8 MB" },
-  { id: "4", name: "National ID", type: "National Identification", uploadedAt: "2023-01-12", status: "Verified" as const, fileSize: "1.5 MB" },
-  { id: "5", name: "Police Report", type: "Police Report", uploadedAt: "2023-02-01", status: "Pending" as const, fileSize: "0.9 MB" },
-  { id: "6", name: "SSF Document", type: "SSF", uploadedAt: "2023-02-05", status: "Verified" as const, fileSize: "1.2 MB" },
+type DocStatus = "Verified" | "Pending" | "Rejected";
+const documents: { id: string; name: string; type: string; uploadedAt: string; status: DocStatus; fileSize: string }[] = [
+  { id: "1", name: "Citizenship Certificate", type: "Citizenship", uploadedAt: "2023-01-10", status: "Verified", fileSize: "2.4 MB" },
+  { id: "2", name: "PAN Card", type: "PAN", uploadedAt: "2023-01-10", status: "Verified", fileSize: "1.1 MB" },
+  { id: "3", name: "Bachelor's Degree", type: "Certificate", uploadedAt: "2023-01-12", status: "Pending", fileSize: "3.8 MB" },
+  { id: "4", name: "National ID", type: "National Identification", uploadedAt: "2023-01-12", status: "Verified", fileSize: "1.5 MB" },
+  { id: "5", name: "Police Report", type: "Police Report", uploadedAt: "2023-02-01", status: "Pending", fileSize: "0.9 MB" },
+  { id: "6", name: "SSF Document", type: "SSF", uploadedAt: "2023-02-05", status: "Verified", fileSize: "1.2 MB" },
 ];
 
 const emergencyContacts = [
