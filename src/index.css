@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,54 +6,95 @@
 
 @layer base {
   :root {
-    --background: 220 15% 5%;
+    --background: 0 0% 98%;
+    --foreground: 220 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+
+    --primary: 220 90% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 14% 40%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 220 14% 93%;
+    --accent-foreground: 220 20% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 220 90% 56%;
+
+    --radius: 0.75rem;
+
+    --success: 152 69% 40%;
+    --success-foreground: 152 69% 97%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 10%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 10% 46%;
+    --sidebar-primary: 220 90% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 220 20% 10%;
+    --sidebar-border: 220 13% 93%;
+    --sidebar-ring: 220 90% 56%;
+
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  .dark {
+    --background: 224 20% 6%;
     --foreground: 210 20% 98%;
 
-    --card: 220 15% 8%;
+    --card: 224 18% 10%;
     --card-foreground: 210 20% 98%;
 
-    --popover: 220 15% 10%;
+    --popover: 224 18% 12%;
     --popover-foreground: 210 20% 98%;
 
-    --primary: 210 100% 50%;
-    --primary-foreground: 210 20% 98%;
+    --primary: 220 90% 56%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 15% 12%;
-    --secondary-foreground: 210 20% 85%;
+    --secondary: 220 14% 14%;
+    --secondary-foreground: 215 15% 75%;
 
-    --muted: 215 15% 15%;
-    --muted-foreground: 215 15% 55%;
+    --muted: 220 14% 16%;
+    --muted-foreground: 215 12% 55%;
 
-    --accent: 215 15% 18%;
+    --accent: 220 14% 18%;
     --accent-foreground: 210 20% 90%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 20% 98%;
 
-    --border: 215 15% 12%;
-    --input: 215 15% 15%;
-    --ring: 210 100% 50%;
+    --border: 220 14% 14%;
+    --input: 220 14% 16%;
+    --ring: 220 90% 56%;
 
-    --radius: 0.5rem;
+    --success: 152 69% 40%;
+    --success-foreground: 152 69% 95%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 10%;
 
-    --success: 150 80% 40%;
-    --success-foreground: 150 80% 95%;
-    --warning: 30 100% 50%;
-    --warning-foreground: 30 100% 10%;
-
-    --sidebar-background: 220 15% 6%;
-    --sidebar-foreground: 215 15% 55%;
-    --sidebar-primary: 210 100% 50%;
-    --sidebar-primary-foreground: 210 20% 98%;
-    --sidebar-accent: 215 15% 12%;
+    --sidebar-background: 224 20% 7%;
+    --sidebar-foreground: 215 12% 55%;
+    --sidebar-primary: 220 90% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 14%;
     --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 215 15% 10%;
-    --sidebar-ring: 210 100% 50%;
-
-    --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
-
-    font-family: 'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --sidebar-border: 220 14% 11%;
+    --sidebar-ring: 220 90% 56%;
   }
 }
 
@@ -64,46 +105,64 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    letter-spacing: -0.02em;
-    @apply tracking-tight;
+    letter-spacing: -0.025em;
+    @apply tracking-tight font-semibold;
   }
 }
 
 @layer components {
   .font-mono-data {
-    font-family: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     font-variant-numeric: tabular-nums;
   }
 
   .status-pill {
-    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium border;
   }
 
   .status-active {
-    background: hsl(150 80% 40% / 0.1);
-    color: hsl(150 80% 55%);
-    border-color: hsl(150 80% 40% / 0.2);
+    background: hsl(152 69% 40% / 0.1);
+    color: hsl(152 69% 40%);
+    border-color: hsl(152 69% 40% / 0.2);
+  }
+
+  .dark .status-active {
+    color: hsl(152 69% 55%);
   }
 
   .status-pending {
-    background: hsl(30 100% 50% / 0.1);
-    color: hsl(30 100% 60%);
-    border-color: hsl(30 100% 50% / 0.2);
+    background: hsl(38 92% 50% / 0.1);
+    color: hsl(38 80% 40%);
+    border-color: hsl(38 92% 50% / 0.2);
+  }
+
+  .dark .status-pending {
+    color: hsl(38 92% 60%);
   }
 
   .status-inactive {
-    background: hsl(215 15% 15% / 0.5);
-    color: hsl(215 15% 55%);
-    border-color: hsl(215 15% 20%);
+    background: hsl(220 14% 50% / 0.1);
+    color: hsl(220 10% 46%);
+    border-color: hsl(220 14% 50% / 0.15);
+  }
+
+  .dark .status-inactive {
+    color: hsl(215 12% 55%);
+    border-color: hsl(220 14% 20%);
   }
 
   .status-resigned {
-    background: hsl(0 72% 51% / 0.1);
-    color: hsl(0 72% 65%);
+    background: hsl(0 84% 60% / 0.08);
+    color: hsl(0 72% 50%);
     border-color: hsl(0 72% 51% / 0.2);
+  }
+
+  .dark .status-resigned {
+    color: hsl(0 72% 65%);
   }
 
   .nexus-table {
@@ -111,16 +170,20 @@
   }
 
   .nexus-table th {
-    @apply text-left text-muted-foreground font-medium text-xs uppercase tracking-wider px-4 py-2 border-b;
+    @apply text-left text-muted-foreground font-medium text-[11px] uppercase tracking-wider px-4 py-3 border-b bg-muted/30;
   }
 
   .nexus-table td {
-    @apply px-4 py-2.5 border-b border-border/50;
-    height: 40px;
+    @apply px-4 py-3 border-b border-border/50;
+    height: 44px;
   }
 
-  .nexus-table tr:hover td {
-    background: hsl(215 15% 8%);
+  .nexus-table tr {
+    @apply transition-colors;
+  }
+
+  .nexus-table tbody tr:hover td {
+    @apply bg-accent/50;
   }
 
   .press-effect {
@@ -128,10 +191,14 @@
   }
 
   .press-effect:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
 
   .glow-active {
-    box-shadow: inset 0 0 12px hsl(210 100% 50% / 0.15);
+    box-shadow: inset 0 0 12px hsl(220 90% 56% / 0.12);
+  }
+
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm border border-border rounded-xl shadow-sm;
   }
 }

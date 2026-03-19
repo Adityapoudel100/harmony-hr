@@ -1,27 +1,24 @@
 import { motion } from "framer-motion";
 import {
-  Users, Clock, CalendarDays, AlertTriangle,
-  UserPlus, CheckCircle2, TrendingUp, ArrowUpRight
+  Users, CalendarDays, AlertTriangle,
+  UserPlus, ArrowUpRight, Activity
 } from "lucide-react";
 
 const container = {
   hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05, ease: [0.2, 0, 0, 1] },
-  },
+  show: { opacity: 1, transition: { staggerChildren: 0.06 } },
 };
 
 const item = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.2, 0, 0, 1] } },
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0, 1] } },
 };
 
 const stats = [
-  { label: "Active Employees", value: "342", icon: Users, change: "+12", status: "active" as const },
-  { label: "Pending Onboarding", value: "12", icon: UserPlus, change: "+3", status: "pending" as const },
-  { label: "On Leave Today", value: "8", icon: CalendarDays, change: "—", status: "inactive" as const },
-  { label: "Clearance Required", value: "4", icon: AlertTriangle, change: "+1", status: "pending" as const },
+  { label: "Active Employees", value: "342", icon: Users, change: "+12", positive: true },
+  { label: "Pending Onboarding", value: "12", icon: UserPlus, change: "+3", positive: false },
+  { label: "On Leave Today", value: "8", icon: CalendarDays, change: "—", positive: true },
+  { label: "Clearance Required", value: "4", icon: AlertTriangle, change: "+1", positive: false },
 ];
 
 const pendingActions = [
@@ -42,41 +39,40 @@ const recentActivity = [
 export default function Dashboard() {
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      {/* Header */}
       <motion.div variants={item}>
-        <h1 className="text-lg font-semibold text-foreground">System State</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          <span className="font-mono-data text-foreground font-medium">342</span> Active Nodes · <span className="font-mono-data text-warning font-medium">12</span> Pending Onboarding · <span className="font-mono-data text-warning font-medium">4</span> Clearance Required
+        <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Overview of your workforce status
         </p>
       </motion.div>
 
       {/* Stats Grid */}
-      <motion.div variants={item} className="grid grid-cols-4 gap-3">
+      <motion.div variants={item} className="grid grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-card border border-border rounded-lg p-4 press-effect cursor-default"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <stat.icon className="w-4 h-4 text-muted-foreground" />
+          <div key={stat.label} className="glass-card p-5 press-effect cursor-default group hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <stat.icon className="w-5 h-5 text-primary" />
+              </div>
               {stat.change !== "—" && (
-                <span className={`text-xs font-mono-data ${stat.status === "active" ? "text-success" : "text-warning"}`}>
+                <span className={`flex items-center gap-0.5 text-xs font-medium font-mono-data ${stat.positive ? "text-success" : "text-warning"}`}>
                   {stat.change}
+                  <ArrowUpRight className="w-3 h-3" />
                 </span>
               )}
             </div>
-            <p className="text-2xl font-semibold font-mono-data tracking-tight">{stat.value}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+            <p className="text-3xl font-bold font-mono-data tracking-tight">{stat.value}</p>
+            <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
           </div>
         ))}
       </motion.div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-5">
         {/* Pending Actions */}
-        <motion.div variants={item} className="col-span-2 bg-card border border-border rounded-lg">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <h2 className="text-sm font-medium">Pending Actions</h2>
+        <motion.div variants={item} className="col-span-2 glass-card overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <h2 className="text-sm font-semibold">Pending Actions</h2>
             <span className="status-pill status-pending">{pendingActions.length} items</span>
           </div>
           <table className="nexus-table">
@@ -106,14 +102,15 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Live Activity */}
-        <motion.div variants={item} className="bg-card border border-border rounded-lg">
-          <div className="px-4 py-3 border-b border-border">
-            <h2 className="text-sm font-medium">Live Activity</h2>
+        <motion.div variants={item} className="glass-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+            <Activity className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold">Live Activity</h2>
           </div>
-          <div className="p-2">
+          <div className="p-3">
             {recentActivity.map((act, i) => (
-              <div key={i} className="flex items-start gap-3 px-2 py-2.5 rounded-md hover:bg-accent/50 transition-colors">
-                <div className="relative mt-1">
+              <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-accent/50 transition-colors">
+                <div className="relative mt-1.5">
                   <div className={`w-2 h-2 rounded-full ${
                     act.type === "clockin" ? "bg-success animate-pulse-glow" :
                     act.type === "leave" ? "bg-primary" :
@@ -122,8 +119,8 @@ export default function Dashboard() {
                   }`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground truncate">{act.text}</p>
-                  <p className="text-xs text-muted-foreground font-mono-data">{act.time}</p>
+                  <p className="text-sm text-foreground">{act.text}</p>
+                  <p className="text-[11px] text-muted-foreground font-mono-data mt-0.5">{act.time}</p>
                 </div>
               </div>
             ))}
