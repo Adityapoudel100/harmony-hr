@@ -13,6 +13,7 @@ import EmployeeSelfService from "./pages/EmployeeSelfService";
 import Offboarding from "./pages/Offboarding";
 import Reports from "./pages/Reports";
 import RolesAccess from "./pages/RolesAccess";
+import AssetManagement from "./pages/AssetManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
