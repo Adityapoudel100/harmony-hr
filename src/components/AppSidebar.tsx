@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Users, Clock, CalendarDays, LayoutDashboard,
-  FileText, LogOut, BarChart3, Shield,
+  FileText, LogOut, BarChart3, Shield, Package,
   Settings, Sun, Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,7 @@ const navGroups = [
   {
     label: "Administration",
     items: [
+      { to: "/assets", icon: Package, label: "Assets" },
       { to: "/offboarding", icon: LogOut, label: "Offboarding" },
       { to: "/reports", icon: BarChart3, label: "Reports" },
       { to: "/roles", icon: Shield, label: "Roles & Access" },

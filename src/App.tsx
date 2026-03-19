@@ -13,6 +13,7 @@ import EmployeeSelfService from "./pages/EmployeeSelfService";
 import Offboarding from "./pages/Offboarding";
 import Reports from "./pages/Reports";
 import RolesAccess from "./pages/RolesAccess";
+import AssetManagement from "./pages/AssetManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/offboarding" element={<Offboarding />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/roles" element={<RolesAccess />} />
+              <Route path="/assets" element={<AssetManagement />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

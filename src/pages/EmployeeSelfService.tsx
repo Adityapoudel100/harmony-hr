@@ -1,6 +1,16 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { User, FileText, CreditCard, CalendarDays, Edit2 } from "lucide-react";
+import {
+  User, FileText, CreditCard, CalendarDays, Edit2, Upload, Plus,
+  Phone, Mail, Building2, Shield, Package, AlertCircle, Check, X, Trash2
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select";
 
 const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
@@ -16,6 +26,17 @@ const profile = {
   gender: "Male",
   joinDate: "2023-01-15",
   status: "Active",
+  maritalStatus: "Single",
+  fatherName: "Ram Bhandari",
+  grandfatherName: "Hari Bhandari",
+  motherName: "Sita Bhandari",
+  currentAddress: "Kathmandu, Nepal",
+  permanentAddress: "Pokhara, Nepal",
+  level: "Senior",
+  hierarchy: "Team Lead → Engineering Manager → CTO",
+  previousExperience: "4 years",
+  employmentType: "Full-time",
+  employmentStatus: "Active",
 };
 
 const leaveBalance = [
@@ -24,7 +45,74 @@ const leaveBalance = [
   { type: "Unpaid Leave", total: "∞", used: 0, remaining: "∞" },
 ];
 
+interface Document {
+  id: string;
+  name: string;
+  type: string;
+  uploadedAt: string;
+  status: "Verified" | "Pending" | "Rejected";
+  fileSize: string;
+}
+
+const documents: Document[] = [
+  { id: "1", name: "Citizenship Certificate", type: "Citizenship", uploadedAt: "2023-01-10", status: "Verified", fileSize: "2.4 MB" },
+  { id: "2", name: "PAN Card", type: "PAN", uploadedAt: "2023-01-10", status: "Verified", fileSize: "1.1 MB" },
+  { id: "3", name: "Bachelor's Degree", type: "Certificate", uploadedAt: "2023-01-12", status: "Pending", fileSize: "3.8 MB" },
+  { id: "4", name: "National ID", type: "National Identification", uploadedAt: "2023-01-12", status: "Verified", fileSize: "1.5 MB" },
+  { id: "5", name: "Police Report", type: "Police Report", uploadedAt: "2023-02-01", status: "Pending", fileSize: "0.9 MB" },
+  { id: "6", name: "SSF Document", type: "SSF", uploadedAt: "2023-02-05", status: "Verified", fileSize: "1.2 MB" },
+];
+
+const emergencyContacts = [
+  { id: "1", name: "Ram Bhandari", relation: "Father", phone: "+977-9801234567", email: "ram@email.com" },
+  { id: "2", name: "Sita Bhandari", relation: "Mother", phone: "+977-9801234568", email: "sita@email.com" },
+];
+
+const bankDetails = {
+  bankName: "Nepal Bank Ltd.",
+  accountNumber: "1234567890123456",
+  branch: "Kathmandu Main Branch",
+  salaryAmount: "NPR 85,000",
+  contractType: "Permanent",
+};
+
+interface Asset {
+  id: string;
+  name: string;
+  type: string;
+  serialNumber: string;
+  assignedDate: string;
+  status: "Active" | "Pending Approval" | "Returned" | "Pending Return";
+}
+
+const employeeAssets: Asset[] = [
+  { id: "A-001", name: "MacBook Pro 14\"", type: "Laptop", serialNumber: "MBP-2023-0041", assignedDate: "2023-01-15", status: "Active" },
+  { id: "A-002", name: "Dell Monitor 27\"", type: "Monitor", serialNumber: "DM-2023-0112", assignedDate: "2023-01-15", status: "Active" },
+  { id: "A-003", name: "Logitech MX Keys", type: "Keyboard", serialNumber: "LMK-2023-0089", assignedDate: "2023-01-15", status: "Active" },
+  { id: "A-004", name: "iPhone 15", type: "Mobile", serialNumber: "IP15-2024-0022", assignedDate: "2024-03-01", status: "Pending Approval" },
+];
+
+const docStatusClass: Record<string, string> = {
+  Verified: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  Pending: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  Rejected: "bg-red-500/10 text-red-500 border-red-500/20",
+};
+
+const assetStatusClass: Record<string, string> = {
+  Active: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  "Pending Approval": "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  Returned: "bg-muted text-muted-foreground border-border",
+  "Pending Return": "bg-blue-500/10 text-blue-500 border-blue-500/20",
+};
+
+const documentTypes = [
+  "Citizenship", "PAN", "Certificate", "National Identification",
+  "Police Report", "SSF", "Other"
+];
+
 export default function EmployeeSelfService() {
+  const [activeTab, setActiveTab] = useState("profile");
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-4">
       <motion.div variants={item}>
@@ -32,73 +120,365 @@ export default function EmployeeSelfService() {
         <p className="text-sm text-muted-foreground">Employee Self-Service Portal</p>
       </motion.div>
 
-      <div className="grid grid-cols-3 gap-4">
-        {/* Profile Card */}
-        <motion.div variants={item} className="col-span-2 bg-card border border-border rounded-lg p-5">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-lg font-medium text-muted-foreground">
-                AB
-              </div>
-              <div>
-                <h2 className="font-semibold">{profile.name}</h2>
-                <p className="text-sm text-muted-foreground">{profile.designation} · {profile.department}</p>
+      {/* Top Summary */}
+      <motion.div variants={item} className="bg-card border border-border rounded-lg p-5">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center text-xl font-semibold text-primary">
+              AB
+            </div>
+            <div>
+              <h2 className="font-semibold text-base">{profile.name}</h2>
+              <p className="text-sm text-muted-foreground">{profile.designation} · {profile.department}</p>
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className="text-xs font-mono text-muted-foreground">{profile.id}</span>
+                <span className="status-pill status-active">{profile.status}</span>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5 press-effect">
-              <Edit2 className="w-3.5 h-3.5" />
-              Edit Profile
-            </Button>
           </div>
+          <Button variant="outline" size="sm" className="gap-1.5 press-effect">
+            <Edit2 className="w-3.5 h-3.5" />
+            Edit Profile
+          </Button>
+        </div>
+      </motion.div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: "Employee ID", value: profile.id, mono: true },
-              { label: "Email", value: profile.email },
-              { label: "Phone", value: profile.phone, mono: true },
-              { label: "Date of Birth", value: profile.dob, mono: true },
-              { label: "Gender", value: profile.gender },
-              { label: "Date of Joining", value: profile.joinDate, mono: true },
-            ].map((field) => (
-              <div key={field.label}>
-                <p className="text-xs text-muted-foreground mb-0.5">{field.label}</p>
-                <p className={`text-sm ${field.mono ? "font-mono-data" : ""}`}>{field.value}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+      {/* Tabs */}
+      <motion.div variants={item}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="bg-muted/50 border border-border p-1 h-auto flex-wrap">
+            <TabsTrigger value="profile" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <User className="w-3.5 h-3.5" />Personal
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <FileText className="w-3.5 h-3.5" />Documents
+            </TabsTrigger>
+            <TabsTrigger value="emergency" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <Phone className="w-3.5 h-3.5" />Emergency
+            </TabsTrigger>
+            <TabsTrigger value="bank" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <CreditCard className="w-3.5 h-3.5" />Bank Details
+            </TabsTrigger>
+            <TabsTrigger value="department" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <Building2 className="w-3.5 h-3.5" />Department
+            </TabsTrigger>
+            <TabsTrigger value="leave" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <CalendarDays className="w-3.5 h-3.5" />Leave
+            </TabsTrigger>
+            <TabsTrigger value="assets" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <Package className="w-3.5 h-3.5" />Assets
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Leave Balance */}
-        <motion.div variants={item} className="bg-card border border-border rounded-lg">
-          <div className="px-4 py-3 border-b border-border">
-            <h2 className="text-sm font-medium">Leave Balance</h2>
-          </div>
-          <div className="p-4 space-y-3">
-            {leaveBalance.map((lb) => (
-              <div key={lb.type}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground">{lb.type}</span>
-                  <span className="text-xs font-mono-data">{lb.used}/{lb.total === "∞" ? "∞" : lb.total}</span>
-                </div>
-                {typeof lb.total === "number" && (
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${(lb.used / lb.total) * 100}%` }}
-                    />
+          {/* Personal Details */}
+          <TabsContent value="profile" className="space-y-4">
+            <div className="bg-card border border-border rounded-lg p-5">
+              <h3 className="text-sm font-semibold mb-4">Personal Information</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: "Full Name", value: profile.name },
+                  { label: "Email", value: profile.email },
+                  { label: "Phone", value: profile.phone, mono: true },
+                  { label: "Date of Birth", value: profile.dob, mono: true },
+                  { label: "Gender", value: profile.gender },
+                  { label: "Marital Status", value: profile.maritalStatus },
+                ].map((field) => (
+                  <div key={field.label}>
+                    <p className="text-xs text-muted-foreground mb-0.5">{field.label}</p>
+                    <p className={`text-sm ${field.mono ? "font-mono" : ""}`}>{field.value}</p>
                   </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="px-4 pb-4">
-            <Button size="sm" className="w-full gap-1.5 press-effect">
-              <CalendarDays className="w-3.5 h-3.5" />
-              Apply Leave
-            </Button>
-          </div>
-        </motion.div>
-      </div>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-5">
+              <h3 className="text-sm font-semibold mb-4">Family Details</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: "Father's Name", value: profile.fatherName },
+                  { label: "Grandfather's Name", value: profile.grandfatherName },
+                  { label: "Mother's Name", value: profile.motherName },
+                ].map((field) => (
+                  <div key={field.label}>
+                    <p className="text-xs text-muted-foreground mb-0.5">{field.label}</p>
+                    <p className="text-sm">{field.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-5">
+              <h3 className="text-sm font-semibold mb-4">Address</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Current Address</p>
+                  <p className="text-sm">{profile.currentAddress}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Permanent Address</p>
+                  <p className="text-sm">{profile.permanentAddress}</p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Documents */}
+          <TabsContent value="documents" className="space-y-4">
+            <div className="bg-card border border-border rounded-lg">
+              <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold">Documents</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Upload citizenship, PAN, certificates, NID, police report, SSF documents</p>
+                </div>
+                <Button size="sm" className="gap-1.5 press-effect">
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload Document
+                </Button>
+              </div>
+
+              {/* Upload area */}
+              <div className="px-5 py-4 border-b border-border">
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                  <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Drag & drop files here, or click to browse</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Supports PDF, JPG, PNG up to 10MB</p>
+                  <div className="flex items-center gap-2 justify-center mt-3">
+                    <Select>
+                      <SelectTrigger className="w-48 h-8 text-xs">
+                        <SelectValue placeholder="Select document type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {documentTypes.map((type) => (
+                          <SelectItem key={type} value={type} className="text-xs">{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Document list */}
+              <table className="nexus-table">
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Uploaded</th>
+                    <th>Status</th>
+                    <th className="w-10"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {documents.map((doc) => (
+                    <tr key={doc.id}>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm">{doc.name}</span>
+                        </div>
+                      </td>
+                      <td className="text-xs text-muted-foreground">{doc.type}</td>
+                      <td className="text-xs font-mono text-muted-foreground">{doc.fileSize}</td>
+                      <td className="text-xs font-mono text-muted-foreground">{doc.uploadedAt}</td>
+                      <td>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${docStatusClass[doc.status]}`}>
+                          {doc.status === "Verified" && <Check className="w-3 h-3" />}
+                          {doc.status === "Pending" && <AlertCircle className="w-3 h-3" />}
+                          {doc.status === "Rejected" && <X className="w-3 h-3" />}
+                          {doc.status}
+                        </span>
+                      </td>
+                      <td>
+                        <button className="p-1 rounded hover:bg-accent transition-colors">
+                          <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          {/* Emergency Contacts */}
+          <TabsContent value="emergency" className="space-y-4">
+            <div className="bg-card border border-border rounded-lg">
+              <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Emergency Contacts</h3>
+                <Button size="sm" variant="outline" className="gap-1.5 press-effect">
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Contact
+                </Button>
+              </div>
+              <div className="divide-y divide-border">
+                {emergencyContacts.map((contact) => (
+                  <div key={contact.id} className="px-5 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+                        {contact.name.split(" ").map((n) => n[0]).join("")}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{contact.name}</p>
+                        <p className="text-xs text-muted-foreground">{contact.relation}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Phone className="w-3.5 h-3.5" />
+                        <span className="font-mono">{contact.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>{contact.email}</span>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-7 px-2">
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Bank Details */}
+          <TabsContent value="bank" className="space-y-4">
+            <div className="bg-card border border-border rounded-lg p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">Bank & Salary Information</h3>
+                <Button variant="outline" size="sm" className="gap-1.5 press-effect">
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: "Bank Name", value: bankDetails.bankName },
+                  { label: "Account Number", value: bankDetails.accountNumber, mono: true },
+                  { label: "Branch", value: bankDetails.branch },
+                  { label: "Salary Amount", value: bankDetails.salaryAmount, mono: true },
+                  { label: "Employment Contract", value: bankDetails.contractType },
+                ].map((field) => (
+                  <div key={field.label}>
+                    <p className="text-xs text-muted-foreground mb-0.5">{field.label}</p>
+                    <p className={`text-sm ${field.mono ? "font-mono" : ""}`}>{field.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Department & Role */}
+          <TabsContent value="department" className="space-y-4">
+            <div className="bg-card border border-border rounded-lg p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">Department & Role Assignment</h3>
+                <Button variant="outline" size="sm" className="gap-1.5 press-effect">
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: "Department", value: profile.department },
+                  { label: "Designation", value: profile.designation },
+                  { label: "Level", value: profile.level },
+                  { label: "Hierarchy", value: profile.hierarchy },
+                  { label: "Date of Joining", value: profile.joinDate, mono: true },
+                  { label: "Previous Experience", value: profile.previousExperience },
+                  { label: "Employment Type", value: profile.employmentType },
+                  { label: "Employment Status", value: profile.employmentStatus },
+                ].map((field) => (
+                  <div key={field.label}>
+                    <p className="text-xs text-muted-foreground mb-0.5">{field.label}</p>
+                    <p className={`text-sm ${field.mono ? "font-mono" : ""}`}>{field.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Leave Balance */}
+          <TabsContent value="leave" className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              {leaveBalance.map((lb) => (
+                <div key={lb.type} className="bg-card border border-border rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground mb-1">{lb.type}</p>
+                  <div className="flex items-end justify-between mb-2">
+                    <span className="text-2xl font-semibold font-mono">{lb.remaining}</span>
+                    <span className="text-xs text-muted-foreground font-mono">{lb.used}/{lb.total === "∞" ? "∞" : lb.total} used</span>
+                  </div>
+                  {typeof lb.total === "number" && (
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all"
+                        style={{ width: `${(lb.used / lb.total) * 100}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-start">
+              <Button size="sm" className="gap-1.5 press-effect">
+                <CalendarDays className="w-3.5 h-3.5" />
+                Apply Leave
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* Assets */}
+          <TabsContent value="assets" className="space-y-4">
+            <div className="bg-card border border-border rounded-lg">
+              <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold">My Assets</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Assets allocated to you. Request additions or returns below.</p>
+                </div>
+                <Button size="sm" className="gap-1.5 press-effect">
+                  <Plus className="w-3.5 h-3.5" />
+                  Request Asset
+                </Button>
+              </div>
+              <table className="nexus-table">
+                <thead>
+                  <tr>
+                    <th>Asset ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Serial Number</th>
+                    <th>Assigned</th>
+                    <th>Status</th>
+                    <th className="w-10"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employeeAssets.map((asset) => (
+                    <tr key={asset.id}>
+                      <td className="text-xs font-mono text-muted-foreground">{asset.id}</td>
+                      <td className="text-sm font-medium">{asset.name}</td>
+                      <td className="text-xs text-muted-foreground">{asset.type}</td>
+                      <td className="text-xs font-mono text-muted-foreground">{asset.serialNumber}</td>
+                      <td className="text-xs font-mono text-muted-foreground">{asset.assignedDate}</td>
+                      <td>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${assetStatusClass[asset.status]}`}>
+                          {asset.status}
+                        </span>
+                      </td>
+                      <td>
+                        {asset.status === "Active" && (
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
+                            Return
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </motion.div>
     </motion.div>
   );
 }
