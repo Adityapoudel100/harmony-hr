@@ -35,6 +35,7 @@ const App = () => (
               <Route path="/offboarding" element={<Offboarding />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/roles" element={<RolesAccess />} />
+              <Route path="/assets" element={<AssetManagement />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

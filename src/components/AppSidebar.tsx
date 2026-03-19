@@ -27,6 +27,7 @@ const navGroups = [
   {
     label: "Administration",
     items: [
+      { to: "/assets", icon: Package, label: "Assets" },
       { to: "/offboarding", icon: LogOut, label: "Offboarding" },
       { to: "/reports", icon: BarChart3, label: "Reports" },
       { to: "/roles", icon: Shield, label: "Roles & Access" },
