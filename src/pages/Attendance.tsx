@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Clock, Wifi, WifiOff, RefreshCw, Settings2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Clock, Wifi, WifiOff, RefreshCw, Settings2, AlertCircle, CheckCircle2, Plus, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useRole } from "@/contexts/RoleContext";
 
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
@@ -22,14 +26,23 @@ const statusColors: Record<string, string> = {
   Complete: "status-active",
 };
 
-const devices = [
-  { name: "Main Entrance", ip: "192.168.1.201", model: "ZKTeco SpeedFace-V5L", status: "online", lastSync: "2 min ago" },
-  { name: "Back Gate", ip: "192.168.1.202", model: "ZKTeco ProFace X", status: "online", lastSync: "5 min ago" },
-  { name: "Parking", ip: "192.168.1.203", model: "ZKTeco MultiBio 800", status: "offline", lastSync: "3h ago" },
+const initialDevices = [
+  { id: "1", name: "Main Entrance", ip: "192.168.1.201", model: "ZKTeco SpeedFace-V5L", status: "online", lastSync: "2 min ago", port: "4370", protocol: "TCP" },
+  { id: "2", name: "Back Gate", ip: "192.168.1.202", model: "ZKTeco ProFace X", status: "online", lastSync: "5 min ago", port: "4370", protocol: "TCP" },
+  { id: "3", name: "Parking", ip: "192.168.1.203", model: "ZKTeco MultiBio 800", status: "offline", lastSync: "3h ago", port: "4370", protocol: "TCP" },
+];
+
+const deviceModels = [
+  "ZKTeco SpeedFace-V5L", "ZKTeco ProFace X", "ZKTeco MultiBio 800",
+  "ZKTeco ZFace-M", "ZKTeco uFace 800", "ZKTeco iClock 9000-G"
 ];
 
 export default function Attendance() {
+  const { isHR } = useRole();
   const [syncing, setSyncing] = useState(false);
+  const [configDialog, setConfigDialog] = useState(false);
+  const [addDeviceDialog, setAddDeviceDialog] = useState(false);
+  const [devices] = useState(initialDevices);
 
   const handleSync = () => {
     setSyncing(true);
@@ -50,29 +63,157 @@ export default function Attendance() {
             <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Syncing..." : "Sync Now"}
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 press-effect">
-            <Settings2 className="w-3.5 h-3.5" />
-            Device Config
-          </Button>
+          {isHR && (
+            <Dialog open={configDialog} onOpenChange={setConfigDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 press-effect">
+                  <Settings2 className="w-3.5 h-3.5" />
+                  Device Config
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>ZKTeco Device Configuration</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  {/* ZKBioAccess API Settings */}
+                  <div className="bg-muted/30 border border-border rounded-lg p-4">
+                    <h4 className="text-sm font-semibold mb-3">ZKBioAccess API Connection</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">API Base URL</label>
+                        <Input defaultValue="https://zkbio.company.com/api" className="h-8 text-xs font-mono-data" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">API Key</label>
+                        <Input defaultValue="••••••••••••" type="password" className="h-8 text-xs font-mono-data" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Sync Interval</label>
+                        <Select defaultValue="5">
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">Every 1 minute</SelectItem>
+                            <SelectItem value="5">Every 5 minutes</SelectItem>
+                            <SelectItem value="15">Every 15 minutes</SelectItem>
+                            <SelectItem value="30">Every 30 minutes</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Connection Status</label>
+                        <div className="flex items-center gap-2 h-8">
+                          <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                          <span className="text-xs text-success font-medium">Connected</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Device List */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-semibold">Registered Devices</h4>
+                      <Dialog open={addDeviceDialog} onOpenChange={setAddDeviceDialog}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-1 h-7 text-xs">
+                            <Plus className="w-3 h-3" /> Add Device
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader><DialogTitle>Add New Device</DialogTitle></DialogHeader>
+                          <div className="space-y-3 pt-2">
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">Device Name</label>
+                              <Input placeholder="e.g., Floor 2 Entrance" className="h-8 text-sm" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">IP Address</label>
+                                <Input placeholder="192.168.1.xxx" className="h-8 text-xs font-mono-data" />
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">Port</label>
+                                <Input placeholder="4370" defaultValue="4370" className="h-8 text-xs font-mono-data" />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">Model</label>
+                              <Select>
+                                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select model" /></SelectTrigger>
+                                <SelectContent>
+                                  {deviceModels.map((m) => <SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">Protocol</label>
+                              <Select defaultValue="TCP">
+                                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="TCP">TCP/IP</SelectItem>
+                                  <SelectItem value="UDP">UDP</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-1">
+                              <Button variant="outline" size="sm" onClick={() => setAddDeviceDialog(false)}>Cancel</Button>
+                              <Button size="sm" onClick={() => setAddDeviceDialog(false)}>Add Device</Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    <div className="space-y-2">
+                      {devices.map((device) => (
+                        <div key={device.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            {device.status === "online" ? (
+                              <Wifi className="w-4 h-4 text-success" />
+                            ) : (
+                              <WifiOff className="w-4 h-4 text-destructive" />
+                            )}
+                            <div>
+                              <p className="text-sm font-medium">{device.name}</p>
+                              <p className="text-[11px] text-muted-foreground font-mono-data">{device.ip}:{device.port} · {device.model}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`status-pill ${device.status === "online" ? "status-active" : "status-resigned"}`}>
+                              {device.status}
+                            </span>
+                            <Button variant="ghost" size="sm" className="h-7 px-2">
+                              <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" size="sm" onClick={() => setConfigDialog(false)}>Cancel</Button>
+                    <Button size="sm" className="gap-1.5" onClick={() => setConfigDialog(false)}>
+                      <Save className="w-3.5 h-3.5" /> Save Configuration
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </motion.div>
 
-      {/* ZKTeco Device Status */}
+      {/* Device Status Cards */}
       <motion.div variants={item} className="grid grid-cols-3 gap-4">
         {devices.map((device) => (
           <div key={device.ip} className="glass-card p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                {device.status === "online" ? (
-                  <Wifi className="w-4 h-4 text-success" />
-                ) : (
-                  <WifiOff className="w-4 h-4 text-destructive" />
-                )}
+                {device.status === "online" ? <Wifi className="w-4 h-4 text-success" /> : <WifiOff className="w-4 h-4 text-destructive" />}
                 <span className="text-sm font-medium">{device.name}</span>
               </div>
-              <span className={`status-pill ${device.status === "online" ? "status-active" : "status-resigned"}`}>
-                {device.status}
-              </span>
+              <span className={`status-pill ${device.status === "online" ? "status-active" : "status-resigned"}`}>{device.status}</span>
             </div>
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">

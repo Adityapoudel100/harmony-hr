@@ -1,8 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Plus, Filter, MoreHorizontal } from "lucide-react";
+import { Search, Plus, Filter, MoreHorizontal, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useRole } from "@/contexts/RoleContext";
 
 const container = {
   hidden: { opacity: 0 },
@@ -13,7 +18,7 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.2, 0, 0, 1] } },
 };
 
-type EmployeeStatus = "Active" | "Onboarding" | "On Leave" | "Resigned" | "Inactive";
+type EmployeeStatus = "Active" | "Onboarding" | "On Leave" | "Resigned" | "Inactive" | "Notice Period";
 
 interface Employee {
   id: string;
@@ -29,9 +34,10 @@ interface Employee {
 const statusClass: Record<EmployeeStatus, string> = {
   Active: "status-active",
   Onboarding: "status-pending",
-  "On Leave": "status-inactive",
+  "On Leave": "status-pending",
   Resigned: "status-resigned",
   Inactive: "status-inactive",
+  "Notice Period": "status-notice",
 };
 
 const employees: Employee[] = [
@@ -43,19 +49,35 @@ const employees: Employee[] = [
   { id: "EMP-1006", name: "Anita KC", email: "anita@nexus.io", department: "Finance", designation: "Accountant", status: "Onboarding", joinDate: "2024-01-08", type: "Full-time" },
   { id: "EMP-1007", name: "Dipesh Karki", email: "dipesh@nexus.io", department: "Engineering", designation: "Frontend Dev", status: "Active", joinDate: "2023-07-12", type: "Contract" },
   { id: "EMP-1008", name: "Manisha Rai", email: "manisha@nexus.io", department: "Design", designation: "UI Designer", status: "Active", joinDate: "2023-05-22", type: "Full-time" },
-  { id: "EMP-1009", name: "Suresh Tamang", email: "suresh@nexus.io", department: "Engineering", designation: "Backend Dev", status: "Active", joinDate: "2022-09-14", type: "Full-time" },
+  { id: "EMP-1009", name: "Suresh Tamang", email: "suresh@nexus.io", department: "Engineering", designation: "Backend Dev", status: "Notice Period", joinDate: "2022-09-14", type: "Full-time" },
   { id: "EMP-1010", name: "Kavita Shrestha", email: "kavita@nexus.io", department: "Support", designation: "Support Lead", status: "Active", joinDate: "2023-02-28", type: "Full-time" },
 ];
 
-export default function EmployeeList() {
-  const [search, setSearch] = useState("");
+const departments = [...new Set(employees.map((e) => e.department))];
+const statuses: EmployeeStatus[] = ["Active", "Onboarding", "On Leave", "Notice Period", "Resigned", "Inactive"];
+const types = ["Full-time", "Contract", "Part-time"];
 
-  const filtered = employees.filter(
-    (e) =>
-      e.name.toLowerCase().includes(search.toLowerCase()) ||
+export default function EmployeeList() {
+  const navigate = useNavigate();
+  const { isHR } = useRole();
+  const [search, setSearch] = useState("");
+  const [filterDept, setFilterDept] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [addDialog, setAddDialog] = useState(false);
+
+  const filtered = employees.filter((e) => {
+    const matchSearch = e.name.toLowerCase().includes(search.toLowerCase()) ||
       e.id.toLowerCase().includes(search.toLowerCase()) ||
-      e.department.toLowerCase().includes(search.toLowerCase())
-  );
+      e.department.toLowerCase().includes(search.toLowerCase());
+    const matchDept = filterDept === "all" || e.department === filterDept;
+    const matchStatus = filterStatus === "all" || e.status === filterStatus;
+    const matchType = filterType === "all" || e.type === filterType;
+    return matchSearch && matchDept && matchStatus && matchType;
+  });
+
+  const hasFilters = filterDept !== "all" || filterStatus !== "all" || filterType !== "all";
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-4">
@@ -66,27 +88,136 @@ export default function EmployeeList() {
             <span className="font-mono-data">{employees.length}</span> total employees
           </p>
         </div>
-        <Button size="sm" className="gap-1.5 press-effect">
-          <Plus className="w-3.5 h-3.5" />
-          Add Employee
-        </Button>
+        {isHR && (
+          <Dialog open={addDialog} onOpenChange={setAddDialog}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5 press-effect">
+                <Plus className="w-3.5 h-3.5" />
+                Add Employee
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add New Employee</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Full Name *</label>
+                    <Input placeholder="Enter full name" className="h-9 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Email *</label>
+                    <Input placeholder="email@company.com" type="email" className="h-9 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Phone</label>
+                    <Input placeholder="+977-98XXXXXXXX" className="h-9 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Date of Birth</label>
+                    <Input type="date" className="h-9 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Department *</label>
+                    <Select>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Designation *</label>
+                    <Input placeholder="e.g., Sr. Developer" className="h-9 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Employment Type</label>
+                    <Select>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {types.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Date of Joining</label>
+                    <Input type="date" className="h-9 text-sm" />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" size="sm" onClick={() => setAddDialog(false)}>Cancel</Button>
+                  <Button size="sm" onClick={() => setAddDialog(false)}>Add Employee</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </motion.div>
 
-      {/* Filters */}
-      <motion.div variants={item} className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, ID, department…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-8 text-sm bg-card border-border"
-          />
+      {/* Search + Filters */}
+      <motion.div variants={item} className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, ID, department…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-8 text-sm bg-card border-border"
+            />
+          </div>
+          <Button
+            variant={showFilters ? "secondary" : "outline"}
+            size="sm"
+            className="gap-1.5 h-8 text-muted-foreground press-effect"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="w-3.5 h-3.5" />
+            Filters
+            {hasFilters && <span className="ml-1 w-2 h-2 rounded-full bg-primary" />}
+          </Button>
+          {hasFilters && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground gap-1" onClick={() => { setFilterDept("all"); setFilterStatus("all"); setFilterType("all"); }}>
+              <X className="w-3 h-3" /> Clear
+            </Button>
+          )}
         </div>
-        <Button variant="outline" size="sm" className="gap-1.5 h-8 text-muted-foreground press-effect">
-          <Filter className="w-3.5 h-3.5" />
-          Filters
-        </Button>
+
+        {showFilters && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-3 pb-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Department:</span>
+              <Select value={filterDept} onValueChange={setFilterDept}>
+                <SelectTrigger className="h-7 text-xs w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Status:</span>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="h-7 text-xs w-32"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {statuses.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Type:</span>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {types.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Table */}
@@ -106,11 +237,11 @@ export default function EmployeeList() {
           </thead>
           <tbody>
             {filtered.map((emp) => (
-              <tr key={emp.id} className="cursor-pointer">
+              <tr key={emp.id} className="cursor-pointer" onClick={() => navigate(`/employees/${emp.id}`)}>
                 <td className="font-mono-data text-xs text-muted-foreground">{emp.id}</td>
                 <td>
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground shrink-0">
+                    <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary shrink-0">
                       {emp.name.split(" ").map((n) => n[0]).join("")}
                     </div>
                     <div>
@@ -126,13 +257,31 @@ export default function EmployeeList() {
                   <span className={`status-pill ${statusClass[emp.status]}`}>{emp.status}</span>
                 </td>
                 <td className="font-mono-data text-xs text-muted-foreground">{emp.joinDate}</td>
-                <td>
-                  <button className="p-1 rounded hover:bg-accent transition-colors">
-                    <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                  </button>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded hover:bg-muted transition-colors">
+                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem onClick={() => navigate(`/employees/${emp.id}`)}>View Profile</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/employees/${emp.id}`)}>Edit Details</DropdownMenuItem>
+                      <DropdownMenuItem>View Documents</DropdownMenuItem>
+                      <DropdownMenuItem>View Attendance</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={8} className="text-center text-sm text-muted-foreground py-8">
+                  No employees found matching your filters.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </motion.div>

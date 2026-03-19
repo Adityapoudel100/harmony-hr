@@ -1,36 +1,45 @@
 import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  User, FileText, CreditCard, CalendarDays, Edit2, Upload, Plus,
-  Phone, Mail, Building2, Package, AlertCircle, Check, X, Trash2, Save
+  ArrowLeft, User, FileText, CreditCard, CalendarDays, Edit2, Upload, Plus,
+  Phone, Mail, Building2, Package, AlertCircle, Check, X, Trash2, Save, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from "@/components/ui/select";
+import { useRole } from "@/contexts/RoleContext";
 
 const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } };
-const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
+const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
 
-const profile = {
-  id: "EMP-1001", name: "Aarav Bhandari", email: "aarav@nexus.io", phone: "+977-9812345678",
-  department: "Engineering", designation: "Sr. Developer", dob: "1995-03-15", gender: "Male",
-  joinDate: "2023-01-15", status: "Active", maritalStatus: "Single",
-  fatherName: "Ram Bhandari", grandfatherName: "Hari Bhandari", motherName: "Sita Bhandari",
-  currentAddress: "Kathmandu, Nepal", permanentAddress: "Pokhara, Nepal",
-  level: "Senior", hierarchy: "Team Lead → Engineering Manager → CTO",
-  previousExperience: "4 years", employmentType: "Full-time", employmentStatus: "Active",
+const allEmployees: Record<string, any> = {
+  "EMP-1001": {
+    id: "EMP-1001", name: "Aarav Bhandari", email: "aarav@nexus.io", phone: "+977-9812345678",
+    department: "Engineering", designation: "Sr. Developer", dob: "1995-03-15", gender: "Male",
+    joinDate: "2023-01-15", status: "Active", maritalStatus: "Single",
+    fatherName: "Ram Bhandari", grandfatherName: "Hari Bhandari", motherName: "Sita Bhandari",
+    currentAddress: "Kathmandu, Nepal", permanentAddress: "Pokhara, Nepal",
+    level: "Senior", hierarchy: "Team Lead → Engineering Manager → CTO",
+    previousExperience: "4 years", employmentType: "Full-time", employmentStatus: "Active",
+    bankName: "Nepal Bank Ltd.", accountNumber: "1234567890123456", branch: "Kathmandu Main Branch",
+    salaryAmount: "NPR 85,000", contractType: "Permanent",
+  },
+  "EMP-1002": {
+    id: "EMP-1002", name: "Priya Sharma", email: "priya@nexus.io", phone: "+977-9823456789",
+    department: "Engineering", designation: "DevOps Lead", dob: "1993-07-22", gender: "Female",
+    joinDate: "2022-06-01", status: "Active", maritalStatus: "Married",
+    fatherName: "Shyam Sharma", grandfatherName: "Gopal Sharma", motherName: "Gita Sharma",
+    currentAddress: "Lalitpur, Nepal", permanentAddress: "Birgunj, Nepal",
+    level: "Lead", hierarchy: "DevOps Lead → Engineering Manager → CTO",
+    previousExperience: "6 years", employmentType: "Full-time", employmentStatus: "Active",
+    bankName: "Nabil Bank", accountNumber: "9876543210123456", branch: "Patan Branch",
+    salaryAmount: "NPR 95,000", contractType: "Permanent",
+  },
 };
-
-const leaveBalance = [
-  { type: "Paid Leave", total: 12, used: 3, remaining: 9 },
-  { type: "Sick Leave", total: 6, used: 1, remaining: 5 },
-  { type: "Unpaid Leave", total: "∞", used: 0, remaining: "∞" },
-];
 
 type DocStatus = "Verified" | "Pending" | "Rejected";
 const documents: { id: string; name: string; type: string; uploadedAt: string; status: DocStatus; fileSize: string }[] = [
@@ -47,59 +56,105 @@ const emergencyContacts = [
   { id: "2", name: "Sita Bhandari", relation: "Mother", phone: "+977-9801234568", email: "sita@email.com" },
 ];
 
-const bankDetails = {
-  bankName: "Nepal Bank Ltd.", accountNumber: "1234567890123456",
-  branch: "Kathmandu Main Branch", salaryAmount: "NPR 85,000", contractType: "Permanent",
-};
-
 const employeeAssets = [
   { id: "A-001", name: "MacBook Pro 14\"", type: "Laptop", serialNumber: "MBP-2023-0041", assignedDate: "2023-01-15", status: "Active" },
   { id: "A-002", name: "Dell Monitor 27\"", type: "Monitor", serialNumber: "DM-2023-0112", assignedDate: "2023-01-15", status: "Active" },
   { id: "A-003", name: "Logitech MX Keys", type: "Keyboard", serialNumber: "LMK-2023-0089", assignedDate: "2023-01-15", status: "Active" },
-  { id: "A-004", name: "iPhone 15", type: "Mobile", serialNumber: "IP15-2024-0022", assignedDate: "2024-03-01", status: "Pending Approval" },
 ];
 
-const docStatusClass: Record<string, string> = { Verified: "status-active", Pending: "status-pending", Rejected: "status-resigned" };
-const assetStatusClass: Record<string, string> = {
-  Active: "status-active", "Pending Approval": "status-pending",
-  Returned: "status-inactive", "Pending Return": "status-notice",
+const docStatusClass: Record<string, string> = {
+  Verified: "status-active",
+  Pending: "status-pending",
+  Rejected: "status-resigned",
+};
+
+const empStatusClass: Record<string, string> = {
+  Active: "status-active",
+  "On Leave": "status-pending",
+  "Notice Period": "status-notice",
+  Resigned: "status-resigned",
+  Inactive: "status-inactive",
 };
 
 const documentTypes = ["Citizenship", "PAN", "Certificate", "National Identification", "Police Report", "SSF", "Other"];
 
-export default function EmployeeSelfService() {
+export default function EmployeeProfile() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { isHR } = useRole();
   const [activeTab, setActiveTab] = useState("profile");
   const [editing, setEditing] = useState(false);
-  const [editData, setEditData] = useState(profile);
+  const [statusDialog, setStatusDialog] = useState(false);
   const [assetRequestDialog, setAssetRequestDialog] = useState(false);
+
+  const emp = allEmployees[id || "EMP-1001"] || allEmployees["EMP-1001"];
+  const [editData, setEditData] = useState(emp);
+  const [empStatus, setEmpStatus] = useState(emp.employmentStatus);
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-4">
+      {/* Back button */}
       <motion.div variants={item}>
-        <h1 className="text-lg font-semibold">My Profile</h1>
-        <p className="text-sm text-muted-foreground">Employee Self-Service Portal</p>
+        <Button variant="ghost" size="sm" className="gap-1.5 -ml-2 text-muted-foreground" onClick={() => navigate("/employees")}>
+          <ArrowLeft className="w-4 h-4" />
+          Back to Employees
+        </Button>
       </motion.div>
 
-      {/* Top Summary */}
+      {/* Header */}
       <motion.div variants={item} className="bg-card border border-border rounded-lg p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center text-xl font-semibold text-primary">
-              AB
+            <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center text-xl font-bold text-primary">
+              {emp.name.split(" ").map((n: string) => n[0]).join("")}
             </div>
             <div>
-              <h2 className="font-semibold text-base">{profile.name}</h2>
-              <p className="text-sm text-muted-foreground">{profile.designation} · {profile.department}</p>
-              <div className="flex items-center gap-3 mt-1.5">
-                <span className="text-xs font-mono-data text-muted-foreground">{profile.id}</span>
-                <span className="status-pill status-active">{profile.status}</span>
+              <h2 className="font-semibold text-lg">{emp.name}</h2>
+              <p className="text-sm text-muted-foreground">{emp.designation} · {emp.department}</p>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-xs font-mono-data text-muted-foreground">{emp.id}</span>
+                <span className={`status-pill ${empStatusClass[empStatus] || "status-active"}`}>{empStatus}</span>
+                <span className="text-xs text-muted-foreground">{emp.employmentType}</span>
               </div>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={() => setEditing(!editing)}>
-            {editing ? <Save className="w-3.5 h-3.5" /> : <Edit2 className="w-3.5 h-3.5" />}
-            {editing ? "Save Changes" : "Edit Profile"}
-          </Button>
+          <div className="flex items-center gap-2">
+            {isHR && (
+              <Dialog open={statusDialog} onOpenChange={setStatusDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5 press-effect">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    Change Status
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle>Change Employment Status</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 pt-2">
+                    {["Active", "On Leave", "Notice Period", "Resigned", "Inactive"].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => { setEmpStatus(s); setStatusDialog(false); }}
+                        className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                          empStatus === s ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{s}</span>
+                          <span className={`status-pill ${empStatusClass[s]}`}>{s}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+            <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={() => setEditing(!editing)}>
+              {editing ? <Save className="w-3.5 h-3.5" /> : <Edit2 className="w-3.5 h-3.5" />}
+              {editing ? "Save" : "Edit Profile"}
+            </Button>
+          </div>
         </div>
       </motion.div>
 
@@ -122,15 +177,12 @@ export default function EmployeeSelfService() {
             <TabsTrigger value="department" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Building2 className="w-3.5 h-3.5" />Department
             </TabsTrigger>
-            <TabsTrigger value="leave" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
-              <CalendarDays className="w-3.5 h-3.5" />Leave
-            </TabsTrigger>
             <TabsTrigger value="assets" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Package className="w-3.5 h-3.5" />Assets
             </TabsTrigger>
           </TabsList>
 
-          {/* Personal Details */}
+          {/* Personal */}
           <TabsContent value="profile" className="space-y-4">
             <div className="bg-card border border-border rounded-lg p-5">
               <h3 className="text-sm font-semibold mb-4">Personal Information</h3>
@@ -147,12 +199,12 @@ export default function EmployeeSelfService() {
                     <p className="text-xs text-muted-foreground mb-1">{field.label}</p>
                     {editing ? (
                       <Input
-                        value={(editData as any)[field.key]}
+                        value={editData[field.key]}
                         onChange={(e) => setEditData({ ...editData, [field.key]: e.target.value })}
                         className="h-8 text-sm"
                       />
                     ) : (
-                      <p className={`text-sm ${field.mono ? "font-mono-data" : ""}`}>{(profile as any)[field.key]}</p>
+                      <p className={`text-sm ${field.mono ? "font-mono-data" : ""}`}>{emp[field.key]}</p>
                     )}
                   </div>
                 ))}
@@ -169,9 +221,9 @@ export default function EmployeeSelfService() {
                   <div key={field.label}>
                     <p className="text-xs text-muted-foreground mb-1">{field.label}</p>
                     {editing ? (
-                      <Input value={(editData as any)[field.key]} onChange={(e) => setEditData({ ...editData, [field.key]: e.target.value })} className="h-8 text-sm" />
+                      <Input value={editData[field.key]} onChange={(e) => setEditData({ ...editData, [field.key]: e.target.value })} className="h-8 text-sm" />
                     ) : (
-                      <p className="text-sm">{(profile as any)[field.key]}</p>
+                      <p className="text-sm">{emp[field.key]}</p>
                     )}
                   </div>
                 ))}
@@ -187,9 +239,9 @@ export default function EmployeeSelfService() {
                   <div key={field.label}>
                     <p className="text-xs text-muted-foreground mb-1">{field.label}</p>
                     {editing ? (
-                      <Input value={(editData as any)[field.key]} onChange={(e) => setEditData({ ...editData, [field.key]: e.target.value })} className="h-8 text-sm" />
+                      <Input value={editData[field.key]} onChange={(e) => setEditData({ ...editData, [field.key]: e.target.value })} className="h-8 text-sm" />
                     ) : (
-                      <p className="text-sm">{(profile as any)[field.key]}</p>
+                      <p className="text-sm">{emp[field.key]}</p>
                     )}
                   </div>
                 ))}
@@ -205,7 +257,10 @@ export default function EmployeeSelfService() {
                   <h3 className="text-sm font-semibold">Documents</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Upload citizenship, PAN, certificates, NID, police report, SSF</p>
                 </div>
-                <Button size="sm" className="gap-1.5 press-effect"><Upload className="w-3.5 h-3.5" />Upload Document</Button>
+                <Button size="sm" className="gap-1.5 press-effect">
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload Document
+                </Button>
               </div>
               <div className="px-5 py-4 border-b border-border">
                 <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
@@ -214,20 +269,38 @@ export default function EmployeeSelfService() {
                   <p className="text-xs text-muted-foreground/60 mt-1">Supports PDF, JPG, PNG up to 10MB</p>
                   <div className="flex items-center gap-2 justify-center mt-3">
                     <Select>
-                      <SelectTrigger className="w-48 h-8 text-xs"><SelectValue placeholder="Select document type" /></SelectTrigger>
+                      <SelectTrigger className="w-48 h-8 text-xs">
+                        <SelectValue placeholder="Select document type" />
+                      </SelectTrigger>
                       <SelectContent>
-                        {documentTypes.map((type) => <SelectItem key={type} value={type} className="text-xs">{type}</SelectItem>)}
+                        {documentTypes.map((type) => (
+                          <SelectItem key={type} value={type} className="text-xs">{type}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
               </div>
               <table className="nexus-table">
-                <thead><tr><th>Document</th><th>Type</th><th>Size</th><th>Uploaded</th><th>Status</th><th className="w-10"></th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Uploaded</th>
+                    <th>Status</th>
+                    <th className="w-10"></th>
+                  </tr>
+                </thead>
                 <tbody>
                   {documents.map((doc) => (
                     <tr key={doc.id}>
-                      <td><div className="flex items-center gap-2"><FileText className="w-4 h-4 text-muted-foreground shrink-0" /><span className="text-sm">{doc.name}</span></div></td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm">{doc.name}</span>
+                        </div>
+                      </td>
                       <td className="text-xs text-muted-foreground">{doc.type}</td>
                       <td className="text-xs font-mono-data text-muted-foreground">{doc.fileSize}</td>
                       <td className="text-xs font-mono-data text-muted-foreground">{doc.uploadedAt}</td>
@@ -239,7 +312,11 @@ export default function EmployeeSelfService() {
                           {doc.status}
                         </span>
                       </td>
-                      <td><button className="p-1 rounded hover:bg-muted transition-colors"><Trash2 className="w-3.5 h-3.5 text-muted-foreground" /></button></td>
+                      <td>
+                        <button className="p-1 rounded hover:bg-muted transition-colors">
+                          <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -247,12 +324,15 @@ export default function EmployeeSelfService() {
             </div>
           </TabsContent>
 
-          {/* Emergency Contacts */}
+          {/* Emergency */}
           <TabsContent value="emergency" className="space-y-4">
             <div className="bg-card border border-border rounded-lg">
               <div className="px-5 py-3 border-b border-border flex items-center justify-between">
                 <h3 className="text-sm font-semibold">Emergency Contacts</h3>
-                <Button size="sm" variant="outline" className="gap-1.5 press-effect"><Plus className="w-3.5 h-3.5" />Add Contact</Button>
+                <Button size="sm" variant="outline" className="gap-1.5 press-effect">
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Contact
+                </Button>
               </div>
               <div className="divide-y divide-border">
                 {emergencyContacts.map((contact) => (
@@ -267,8 +347,14 @@ export default function EmployeeSelfService() {
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Phone className="w-3.5 h-3.5" /><span className="font-mono-data">{contact.phone}</span></div>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Mail className="w-3.5 h-3.5" /><span>{contact.email}</span></div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Phone className="w-3.5 h-3.5" />
+                        <span className="font-mono-data">{contact.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>{contact.email}</span>
+                      </div>
                       <Button variant="ghost" size="sm" className="h-7 px-2"><Edit2 className="w-3.5 h-3.5" /></Button>
                     </div>
                   </div>
@@ -277,17 +363,20 @@ export default function EmployeeSelfService() {
             </div>
           </TabsContent>
 
-          {/* Bank Details */}
+          {/* Bank */}
           <TabsContent value="bank" className="space-y-4">
             <div className="bg-card border border-border rounded-lg p-5">
-              <h3 className="text-sm font-semibold mb-4">Bank & Salary Information</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">Bank & Salary Information</h3>
+                {isHR && <Button variant="outline" size="sm" className="gap-1.5 press-effect"><Edit2 className="w-3.5 h-3.5" />Edit</Button>}
+              </div>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: "Bank Name", value: bankDetails.bankName },
-                  { label: "Account Number", value: bankDetails.accountNumber, mono: true },
-                  { label: "Branch", value: bankDetails.branch },
-                  { label: "Salary Amount", value: bankDetails.salaryAmount, mono: true },
-                  { label: "Employment Contract", value: bankDetails.contractType },
+                  { label: "Bank Name", value: emp.bankName },
+                  { label: "Account Number", value: emp.accountNumber, mono: true },
+                  { label: "Branch", value: emp.branch },
+                  { label: "Salary Amount", value: emp.salaryAmount, mono: true },
+                  { label: "Employment Contract", value: emp.contractType },
                 ].map((field) => (
                   <div key={field.label}>
                     <p className="text-xs text-muted-foreground mb-0.5">{field.label}</p>
@@ -298,20 +387,23 @@ export default function EmployeeSelfService() {
             </div>
           </TabsContent>
 
-          {/* Department & Role */}
+          {/* Department */}
           <TabsContent value="department" className="space-y-4">
             <div className="bg-card border border-border rounded-lg p-5">
-              <h3 className="text-sm font-semibold mb-4">Department & Role Assignment</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">Department & Role Assignment</h3>
+                {isHR && <Button variant="outline" size="sm" className="gap-1.5 press-effect"><Edit2 className="w-3.5 h-3.5" />Edit</Button>}
+              </div>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: "Department", value: profile.department },
-                  { label: "Designation", value: profile.designation },
-                  { label: "Level", value: profile.level },
-                  { label: "Hierarchy", value: profile.hierarchy },
-                  { label: "Date of Joining", value: profile.joinDate, mono: true },
-                  { label: "Previous Experience", value: profile.previousExperience },
-                  { label: "Employment Type", value: profile.employmentType },
-                  { label: "Employment Status", value: profile.employmentStatus },
+                  { label: "Department", value: emp.department },
+                  { label: "Designation", value: emp.designation },
+                  { label: "Level", value: emp.level },
+                  { label: "Hierarchy", value: emp.hierarchy },
+                  { label: "Date of Joining", value: emp.joinDate, mono: true },
+                  { label: "Previous Experience", value: emp.previousExperience },
+                  { label: "Employment Type", value: emp.employmentType },
+                  { label: "Employment Status", value: empStatus },
                 ].map((field) => (
                   <div key={field.label}>
                     <p className="text-xs text-muted-foreground mb-0.5">{field.label}</p>
@@ -319,32 +411,6 @@ export default function EmployeeSelfService() {
                   </div>
                 ))}
               </div>
-            </div>
-          </TabsContent>
-
-          {/* Leave Balance */}
-          <TabsContent value="leave" className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              {leaveBalance.map((lb) => (
-                <div key={lb.type} className="bg-card border border-border rounded-lg p-4">
-                  <p className="text-xs text-muted-foreground mb-1">{lb.type}</p>
-                  <div className="flex items-end justify-between mb-2">
-                    <span className="text-2xl font-semibold font-mono-data">{lb.remaining}</span>
-                    <span className="text-xs text-muted-foreground font-mono-data">{lb.used}/{lb.total === "∞" ? "∞" : lb.total} used</span>
-                  </div>
-                  {typeof lb.total === "number" && (
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(lb.used / lb.total) * 100}%` }} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-start">
-              <Button size="sm" className="gap-1.5 press-effect">
-                <CalendarDays className="w-3.5 h-3.5" />
-                Apply Leave
-              </Button>
             </div>
           </TabsContent>
 
@@ -353,15 +419,20 @@ export default function EmployeeSelfService() {
             <div className="bg-card border border-border rounded-lg">
               <div className="px-5 py-3 border-b border-border flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold">My Assets</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Assets allocated to you. Request additions or returns below.</p>
+                  <h3 className="text-sm font-semibold">Assigned Assets</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Assets allocated to this employee</p>
                 </div>
                 <Dialog open={assetRequestDialog} onOpenChange={setAssetRequestDialog}>
                   <DialogTrigger asChild>
-                    <Button size="sm" className="gap-1.5 press-effect"><Plus className="w-3.5 h-3.5" />Request Asset</Button>
+                    <Button size="sm" className="gap-1.5 press-effect">
+                      <Plus className="w-3.5 h-3.5" />
+                      Request Asset
+                    </Button>
                   </DialogTrigger>
                   <DialogContent>
-                    <DialogHeader><DialogTitle>Request New Asset</DialogTitle></DialogHeader>
+                    <DialogHeader>
+                      <DialogTitle>Request New Asset</DialogTitle>
+                    </DialogHeader>
                     <div className="space-y-4 pt-2">
                       <div>
                         <label className="text-xs text-muted-foreground mb-1 block">Asset Type</label>
@@ -391,7 +462,17 @@ export default function EmployeeSelfService() {
                 </Dialog>
               </div>
               <table className="nexus-table">
-                <thead><tr><th>Asset ID</th><th>Name</th><th>Type</th><th>Serial Number</th><th>Assigned</th><th>Status</th><th className="w-10"></th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Asset ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Serial Number</th>
+                    <th>Assigned</th>
+                    <th>Status</th>
+                    <th className="w-10"></th>
+                  </tr>
+                </thead>
                 <tbody>
                   {employeeAssets.map((asset) => (
                     <tr key={asset.id}>
@@ -400,11 +481,9 @@ export default function EmployeeSelfService() {
                       <td className="text-xs text-muted-foreground">{asset.type}</td>
                       <td className="text-xs font-mono-data text-muted-foreground">{asset.serialNumber}</td>
                       <td className="text-xs font-mono-data text-muted-foreground">{asset.assignedDate}</td>
-                      <td><span className={`status-pill ${assetStatusClass[asset.status]}`}>{asset.status}</span></td>
+                      <td><span className="status-pill status-active">{asset.status}</span></td>
                       <td>
-                        {asset.status === "Active" && (
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">Return</Button>
-                        )}
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">Return</Button>
                       </td>
                     </tr>
                   ))}
