@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Users, CalendarDays, AlertTriangle,
-  UserPlus, ArrowUpRight, Activity
+  UserPlus, ArrowUpRight, Activity, Calendar as CalendarIcon
 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { useRole } from "@/contexts/RoleContext";
 
 const container = {
   hidden: { opacity: 0 },
@@ -36,7 +39,34 @@ const recentActivity = [
   { text: "Bikash Gurung submitted resignation", time: "Yesterday", type: "exit" as const },
 ];
 
+const todayLeaves = [
+  { name: "Raj Thapa", type: "Paid Leave", dept: "Marketing", from: "Jan 20", to: "Jan 22" },
+  { name: "Manisha Rai", type: "Sick Leave", dept: "Design", from: "Jan 15", to: "Jan 15" },
+  { name: "Suresh Tamang", type: "Unpaid Leave", dept: "Engineering", from: "Jan 14", to: "Jan 16" },
+];
+
+const upcomingHolidays = [
+  { date: "2024-01-26", name: "Republic Day" },
+  { date: "2024-02-19", name: "Democracy Day" },
+  { date: "2024-03-08", name: "Women's Day" },
+  { date: "2024-03-25", name: "Holi" },
+  { date: "2024-04-14", name: "New Year (Baisakh 1)" },
+];
+
+const leaveStatusClass: Record<string, string> = {
+  "Paid Leave": "status-active",
+  "Sick Leave": "status-pending",
+  "Unpaid Leave": "status-notice",
+};
+
 export default function Dashboard() {
+  const { isHR } = useRole();
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
+
+  // Dates that have holidays or leaves (for calendar highlighting)
+  const holidayDates = upcomingHolidays.map(h => new Date(h.date));
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={item}>
@@ -67,10 +97,111 @@ export default function Dashboard() {
         ))}
       </motion.div>
 
-      {/* Main Content */}
+      {/* Today's Leave & Upcoming Holidays */}
       <div className="grid grid-cols-3 gap-5">
-        {/* Pending Actions */}
-        <motion.div variants={item} className="col-span-2 glass-card overflow-hidden">
+        {/* Today's Leave */}
+        <motion.div variants={item} className="glass-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-semibold">On Leave Today</h2>
+            </div>
+            <span className="status-pill status-pending">{todayLeaves.length}</span>
+          </div>
+          <div className="p-2">
+            {todayLeaves.map((l, i) => (
+              <div key={i} className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/10 transition-colors">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary shrink-0">
+                    {l.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{l.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{l.dept} · {l.from} – {l.to}</p>
+                  </div>
+                </div>
+                <span className={`status-pill ${leaveStatusClass[l.type] || "status-pending"}`}>{l.type}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Upcoming Holidays */}
+        <motion.div variants={item} className="glass-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-semibold">Upcoming Holidays</h2>
+            </div>
+            <button
+              onClick={() => setShowCalendar(!showCalendar)}
+              className="text-xs text-primary hover:underline font-medium"
+            >
+              {showCalendar ? "List View" : "Calendar View"}
+            </button>
+          </div>
+          {showCalendar ? (
+            <div className="p-3 flex justify-center">
+              <Calendar
+                mode="single"
+                selected={calendarDate}
+                onSelect={setCalendarDate}
+                modifiers={{ holiday: holidayDates }}
+                modifiersClassNames={{ holiday: "bg-primary/20 text-primary font-bold rounded-full" }}
+              />
+            </div>
+          ) : (
+            <div className="p-2">
+              {upcomingHolidays.map((h) => (
+                <div key={h.date} className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-accent/10 transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex flex-col items-center justify-center shrink-0">
+                    <span className="text-[10px] font-semibold text-primary leading-none">
+                      {new Date(h.date).toLocaleDateString('en', { month: 'short' })}
+                    </span>
+                    <span className="text-sm font-bold text-primary leading-none mt-0.5">
+                      {new Date(h.date).getDate()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{h.name}</p>
+                    <p className="text-xs text-muted-foreground font-mono-data">{h.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Live Activity */}
+        <motion.div variants={item} className="glass-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+            <Activity className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold">Live Activity</h2>
+          </div>
+          <div className="p-3">
+            {recentActivity.map((act, i) => (
+              <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-accent/50 transition-colors">
+                <div className="relative mt-1.5">
+                  <div className={`w-2 h-2 rounded-full ${
+                    act.type === "clockin" ? "bg-success animate-pulse-glow" :
+                    act.type === "leave" ? "bg-primary" :
+                    act.type === "new" ? "bg-primary" :
+                    "bg-destructive"
+                  }`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground">{act.text}</p>
+                  <p className="text-[11px] text-muted-foreground font-mono-data mt-0.5">{act.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Pending Actions Table */}
+      {isHR && (
+        <motion.div variants={item} className="glass-card overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h2 className="text-sm font-semibold">Pending Actions</h2>
             <span className="status-pill status-pending">{pendingActions.length} items</span>
@@ -100,33 +231,7 @@ export default function Dashboard() {
             </tbody>
           </table>
         </motion.div>
-
-        {/* Live Activity */}
-        <motion.div variants={item} className="glass-card overflow-hidden">
-          <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-            <Activity className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-semibold">Live Activity</h2>
-          </div>
-          <div className="p-3">
-            {recentActivity.map((act, i) => (
-              <div key={i} className="flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-accent/50 transition-colors">
-                <div className="relative mt-1.5">
-                  <div className={`w-2 h-2 rounded-full ${
-                    act.type === "clockin" ? "bg-success animate-pulse-glow" :
-                    act.type === "leave" ? "bg-primary" :
-                    act.type === "new" ? "bg-primary" :
-                    "bg-destructive"
-                  }`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground">{act.text}</p>
-                  <p className="text-[11px] text-muted-foreground font-mono-data mt-0.5">{act.time}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
+      )}
     </motion.div>
   );
 }

@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   Users, Clock, CalendarDays, LayoutDashboard,
   FileText, LogOut, BarChart3, Shield, Package,
-  Settings, Sun, Moon, ChevronDown
+  Settings, Sun, Moon, ChevronDown, DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
@@ -21,6 +21,7 @@ const adminNav = [
       { to: "/employees", icon: Users, label: "Employees" },
       { to: "/attendance", icon: Clock, label: "Attendance" },
       { to: "/leave", icon: CalendarDays, label: "Leave" },
+      { to: "/payroll", icon: DollarSign, label: "Payroll" },
     ],
   },
   {
@@ -49,6 +50,7 @@ const hrNav = [
       { to: "/employees", icon: Users, label: "Employees" },
       { to: "/attendance", icon: Clock, label: "Attendance" },
       { to: "/leave", icon: CalendarDays, label: "Leave" },
+      { to: "/payroll", icon: DollarSign, label: "Payroll" },
     ],
   },
   {
