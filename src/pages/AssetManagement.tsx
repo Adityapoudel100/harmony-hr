@@ -127,7 +127,7 @@ export default function AssetManagement() {
             <DialogContent className="max-w-md">
               <DialogHeader><DialogTitle>Add New Asset</DialogTitle></DialogHeader>
               <div className="space-y-3 pt-2">
-                <div><label className="text-xs text-muted-foreground mb-1 block">Asset Name *</label><Input value={newAsset.name} onChange={e => setNewAsset({ ...newAsset, name: e.target.value })} className="h-8 text-sm" placeholder="e.g., MacBook Pro 16\"" /></div>
+                <div><label className="text-xs text-muted-foreground mb-1 block">Asset Name *</label><Input value={newAsset.name} onChange={e => setNewAsset({ ...newAsset, name: e.target.value })} className="h-8 text-sm" placeholder='e.g., MacBook Pro 16"' /></div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="text-xs text-muted-foreground mb-1 block">Type *</label>
                     <Select value={newAsset.type} onValueChange={v => setNewAsset({ ...newAsset, type: v })}>
