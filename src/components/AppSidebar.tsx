@@ -21,6 +21,7 @@ const adminNav = [
       { to: "/employees", icon: Users, label: "Employees" },
       { to: "/attendance", icon: Clock, label: "Attendance" },
       { to: "/leave", icon: CalendarDays, label: "Leave" },
+      { to: "/payroll", icon: DollarSign, label: "Payroll" },
     ],
   },
   {
