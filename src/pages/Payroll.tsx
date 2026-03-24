@@ -24,12 +24,13 @@ const defaultEmployee = (): PayrollEmployee => ({
   name: "", tp: "single", gd: "male", absentDays: 0, unpaidLeave: 0,
   monthlySalary: 0, disabled: false, pf: 0, dashain: 0,
   extraTime: 0, bonus: 0, cit: 0, healthInsurance: 0, lifeInsurance: 0,
+  hasSSF: true, employmentType: 'full-time',
 });
 
 const sampleEmployees: PayrollEmployee[] = [
-  { id: 1, name: "Aarav Bhandari", tp: "single", gd: "male", absentDays: 0, unpaidLeave: 0, monthlySalary: 85000, disabled: false, pf: 0, dashain: 0, extraTime: 0, bonus: 0, cit: 0, healthInsurance: 0, lifeInsurance: 0, pan: "123456789", ssfId: "SSF-001", designation: "Sr. Developer", totalWorkingDays: 20, workingDaysAttended: 20, paidLeave: 0, sickLeave: 0 },
-  { id: 2, name: "Priya Sharma", tp: "couple", gd: "female", absentDays: 1, unpaidLeave: 0, monthlySalary: 95000, disabled: false, pf: 0, dashain: 0, extraTime: 2000, bonus: 0, cit: 0, healthInsurance: 0, lifeInsurance: 0, pan: "987654321", ssfId: "SSF-002", designation: "DevOps Lead", totalWorkingDays: 20, workingDaysAttended: 19, paidLeave: 1, sickLeave: 0 },
-  { id: 3, name: "Raj Thapa", tp: "single", gd: "male", absentDays: 2, unpaidLeave: 1, monthlySalary: 65000, disabled: false, pf: 5000, dashain: 0, extraTime: 0, bonus: 0, cit: 1000, healthInsurance: 0, lifeInsurance: 0, pan: "456789123", ssfId: "SSF-003", designation: "Campaign Mgr", totalWorkingDays: 20, workingDaysAttended: 17, paidLeave: 0, sickLeave: 0 },
+  { id: 1, name: "Aarav Bhandari", tp: "single", gd: "male", absentDays: 0, unpaidLeave: 0, monthlySalary: 85000, disabled: false, pf: 0, dashain: 0, extraTime: 0, bonus: 0, cit: 0, healthInsurance: 0, lifeInsurance: 0, pan: "123456789", ssfId: "SSF-001", designation: "Sr. Developer", totalWorkingDays: 20, workingDaysAttended: 20, paidLeave: 0, sickLeave: 0, hasSSF: true, employmentType: 'full-time' },
+  { id: 2, name: "Priya Sharma", tp: "couple", gd: "female", absentDays: 1, unpaidLeave: 0, monthlySalary: 95000, disabled: false, pf: 0, dashain: 0, extraTime: 2000, bonus: 0, cit: 0, healthInsurance: 0, lifeInsurance: 0, pan: "987654321", ssfId: "SSF-002", designation: "DevOps Lead", totalWorkingDays: 20, workingDaysAttended: 19, paidLeave: 1, sickLeave: 0, hasSSF: true, employmentType: 'full-time' },
+  { id: 3, name: "Raj Thapa", tp: "single", gd: "male", absentDays: 2, unpaidLeave: 1, monthlySalary: 65000, disabled: false, pf: 5000, dashain: 0, extraTime: 0, bonus: 0, cit: 1000, healthInsurance: 0, lifeInsurance: 0, pan: "456789123", ssfId: "SSF-003", designation: "Campaign Mgr", totalWorkingDays: 20, workingDaysAttended: 17, paidLeave: 0, sickLeave: 0, hasSSF: true, employmentType: 'full-time' },
 ];
 
 interface SavedPayslip {
@@ -366,6 +367,7 @@ export default function Payroll() {
                   <thead>
                     <tr>
                       <th className="w-8">#</th><th>Employee Name</th><th>Type</th><th>Gender</th>
+                      <th>SSF</th><th>Emp. Type</th>
                       <th>Absent</th><th>Unpaid Leave</th><th>Monthly Salary</th><th>PF</th>
                       <th>Dashain</th><th>Extra Time</th><th>Bonus</th><th>CIT</th>
                       <th>Health Ins.</th><th>Life Ins.</th><th className="w-10"></th>
@@ -386,6 +388,15 @@ export default function Payroll() {
                           <Select value={emp.gd} onValueChange={v => updateEmployee(emp.id, 'gd', v as Gender)}>
                             <SelectTrigger className="h-7 text-xs w-20"><SelectValue /></SelectTrigger>
                             <SelectContent><SelectItem value="male" className="text-xs">Male</SelectItem><SelectItem value="female" className="text-xs">Female</SelectItem><SelectItem value="other" className="text-xs">Other</SelectItem></SelectContent>
+                          </Select>
+                        </td>
+                        <td>
+                          <input type="checkbox" checked={emp.hasSSF ?? false} onChange={e => updateEmployee(emp.id, 'hasSSF', e.target.checked)} className="rounded" />
+                        </td>
+                        <td>
+                          <Select value={emp.employmentType || 'full-time'} onValueChange={v => updateEmployee(emp.id, 'employmentType', v)}>
+                            <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="full-time" className="text-xs">Full-time</SelectItem><SelectItem value="contract" className="text-xs">Contract</SelectItem></SelectContent>
                           </Select>
                         </td>
                         <td><Input type="number" value={emp.absentDays} onChange={e => updateEmployee(emp.id, 'absentDays', +e.target.value)} className="h-7 text-xs w-16 font-mono-data" min={0} /></td>

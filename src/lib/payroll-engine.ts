@@ -70,6 +70,8 @@ export interface PayrollEmployee {
   workingDaysAttended?: number;
   paidLeave?: number;
   sickLeave?: number;
+  hasSSF?: boolean;
+  employmentType?: 'full-time' | 'contract';
 }
 
 export interface TaxBandBreakdown {
@@ -103,6 +105,7 @@ export interface PayrollResult extends PayrollEmployee {
   oneThirdIncome: number;
   minDeduction: number;
   taxBands: TaxBandBreakdown[];
+  sstWaived: boolean;
 }
 
 function buildRanges(fyData: FYData, tp: TaxpayerType) {
@@ -117,18 +120,32 @@ function buildRanges(fyData: FYData, tp: TaxpayerType) {
   });
 }
 
-function calcTaxFromRangesWithBands(taxable: number, ranges: { from: number; to: number; rate: number }[], fyData: FYData, tp: TaxpayerType): { tax: number; bands: TaxBandBreakdown[] } {
+function calcTaxFromRangesWithBands(
+  taxable: number,
+  ranges: { from: number; to: number; rate: number }[],
+  fyData: FYData,
+  tp: TaxpayerType,
+  sstWaived: boolean
+): { tax: number; bands: TaxBandBreakdown[] } {
   let tax = 0;
   const bands: TaxBandBreakdown[] = [];
   const base = tp === 'couple' ? fyData.threshCouple : fyData.threshSingle;
 
-  // SST band
-  const sstTaxable = Math.min(taxable, base);
-  const sstTax = sstTaxable * 0.01;
-  if (sstTaxable > 0) {
-    bands.push({ label: 'SST(1%)', from: 0, to: base, rate: 1, taxable: sstTaxable, tax: sstTax });
+  // SST band — waived if employee has SSF contribution and is full-time
+  if (!sstWaived) {
+    const sstTaxable = Math.min(taxable, base);
+    const sstTax = sstTaxable * 0.01;
+    if (sstTaxable > 0) {
+      bands.push({ label: 'SST(1%)', from: 0, to: base, rate: 1, taxable: sstTaxable, tax: sstTax });
+    }
+    tax += sstTax;
+  } else {
+    // Show waived band for transparency
+    const sstTaxable = Math.min(taxable, base);
+    if (sstTaxable > 0) {
+      bands.push({ label: 'SST(1%) — Waived (SSF)', from: 0, to: base, rate: 0, taxable: sstTaxable, tax: 0 });
+    }
   }
-  tax += sstTax;
 
   for (const r of ranges) {
     if (taxable <= r.from) break;
@@ -191,8 +208,11 @@ export function calculatePayroll(emp: PayrollEmployee, fyKey: string, workingDay
 
   const taxableIncome = Math.max(0, annGross - totalAnnualDed);
 
+  // SST is waived if employee has SSF contribution AND is full-time
+  const sstWaived = !!(emp.hasSSF && emp.employmentType === 'full-time');
+
   const ranges = buildRanges(d, emp.tp);
-  const { tax: rawTax, bands } = calcTaxFromRangesWithBands(taxableIncome, ranges, d, emp.tp);
+  const { tax: rawTax, bands } = calcTaxFromRangesWithBands(taxableIncome, ranges, d, emp.tp, sstWaived);
   const annTax = applyRebates(rawTax, d, emp.gd, emp.disabled);
   const monthlyTax = annTax / 12;
 
@@ -224,6 +244,7 @@ export function calculatePayroll(emp: PayrollEmployee, fyKey: string, workingDay
     oneThirdIncome,
     minDeduction,
     taxBands: bands,
+    sstWaived,
   };
 }
 
