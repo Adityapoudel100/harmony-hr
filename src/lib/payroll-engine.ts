@@ -105,6 +105,7 @@ export interface PayrollResult extends PayrollEmployee {
   oneThirdIncome: number;
   minDeduction: number;
   taxBands: TaxBandBreakdown[];
+  sstWaived: boolean;
 }
 
 function buildRanges(fyData: FYData, tp: TaxpayerType) {
