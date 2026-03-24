@@ -24,6 +24,7 @@ const defaultEmployee = (): PayrollEmployee => ({
   name: "", tp: "single", gd: "male", absentDays: 0, unpaidLeave: 0,
   monthlySalary: 0, disabled: false, pf: 0, dashain: 0,
   extraTime: 0, bonus: 0, cit: 0, healthInsurance: 0, lifeInsurance: 0,
+  hasSSF: true, employmentType: 'full-time',
 });
 
 const sampleEmployees: PayrollEmployee[] = [
