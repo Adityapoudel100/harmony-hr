@@ -70,6 +70,8 @@ export interface PayrollEmployee {
   workingDaysAttended?: number;
   paidLeave?: number;
   sickLeave?: number;
+  hasSSF?: boolean;
+  employmentType?: 'full-time' | 'contract';
 }
 
 export interface TaxBandBreakdown {
