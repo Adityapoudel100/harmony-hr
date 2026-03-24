@@ -390,6 +390,15 @@ export default function Payroll() {
                             <SelectContent><SelectItem value="male" className="text-xs">Male</SelectItem><SelectItem value="female" className="text-xs">Female</SelectItem><SelectItem value="other" className="text-xs">Other</SelectItem></SelectContent>
                           </Select>
                         </td>
+                        <td>
+                          <input type="checkbox" checked={emp.hasSSF ?? false} onChange={e => updateEmployee(emp.id, 'hasSSF', e.target.checked)} className="rounded" />
+                        </td>
+                        <td>
+                          <Select value={emp.employmentType || 'full-time'} onValueChange={v => updateEmployee(emp.id, 'employmentType', v)}>
+                            <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="full-time" className="text-xs">Full-time</SelectItem><SelectItem value="contract" className="text-xs">Contract</SelectItem></SelectContent>
+                          </Select>
+                        </td>
                         <td><Input type="number" value={emp.absentDays} onChange={e => updateEmployee(emp.id, 'absentDays', +e.target.value)} className="h-7 text-xs w-16 font-mono-data" min={0} /></td>
                         <td><Input type="number" value={emp.unpaidLeave} onChange={e => updateEmployee(emp.id, 'unpaidLeave', +e.target.value)} className="h-7 text-xs w-16 font-mono-data" min={0} /></td>
                         <td><Input type="number" value={emp.monthlySalary} onChange={e => updateEmployee(emp.id, 'monthlySalary', +e.target.value)} className="h-7 text-xs w-24 font-mono-data" min={0} /></td>
