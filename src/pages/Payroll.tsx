@@ -367,6 +367,7 @@ export default function Payroll() {
                   <thead>
                     <tr>
                       <th className="w-8">#</th><th>Employee Name</th><th>Type</th><th>Gender</th>
+                      <th>SSF</th><th>Emp. Type</th>
                       <th>Absent</th><th>Unpaid Leave</th><th>Monthly Salary</th><th>PF</th>
                       <th>Dashain</th><th>Extra Time</th><th>Bonus</th><th>CIT</th>
                       <th>Health Ins.</th><th>Life Ins.</th><th className="w-10"></th>
