@@ -104,10 +104,17 @@ const roleEmails: Record<UserRole, string> = {
 
 export function AppSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { role, setRole } = useRole();
+  const { user, logout } = useAuth();
 
   const navGroups = role === "super_admin" ? adminNav : role === "hr_admin" ? hrNav : employeeNav;
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-[240px] bg-sidebar border-r border-sidebar-border flex flex-col z-30">
