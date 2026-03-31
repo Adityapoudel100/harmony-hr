@@ -189,16 +189,19 @@ export function AppSidebar() {
           <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
         </button>
 
-        {/* User */}
-        <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-sidebar-accent/70 cursor-pointer transition-colors">
+        {/* User + Logout */}
+        <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-sidebar-accent/70 transition-colors">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
-            {roleInitials[role]}
+            {user?.name?.charAt(0)?.toUpperCase() || roleInitials[role]}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-foreground truncate">{roleLabels[role]}</p>
-            <p className="text-[11px] text-muted-foreground truncate">{roleEmails[role]}</p>
+            <p className="text-[13px] font-medium text-foreground truncate">{user?.name || roleLabels[role]}</p>
+            <p className="text-[11px] text-muted-foreground truncate">{user?.email || roleEmails[role]}</p>
           </div>
-          <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+          <button onClick={handleLogout} title="Sign out" className="text-muted-foreground hover:text-destructive transition-colors">
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
         </div>
       </div>
     </aside>
