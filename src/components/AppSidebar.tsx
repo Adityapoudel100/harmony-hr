@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Users, Clock, CalendarDays, LayoutDashboard,
   FileText, LogOut, BarChart3, Shield, Package,
@@ -7,6 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
 import { useRole, UserRole } from "@/contexts/RoleContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/logo.png";
 
