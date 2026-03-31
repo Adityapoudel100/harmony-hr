@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Users, Clock, CalendarDays, LayoutDashboard,
   FileText, LogOut, BarChart3, Shield, Package,
@@ -7,6 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
 import { useRole, UserRole } from "@/contexts/RoleContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/logo.png";
 
@@ -103,10 +104,17 @@ const roleEmails: Record<UserRole, string> = {
 
 export function AppSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { role, setRole } = useRole();
+  const { user, logout } = useAuth();
 
   const navGroups = role === "super_admin" ? adminNav : role === "hr_admin" ? hrNav : employeeNav;
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-[240px] bg-sidebar border-r border-sidebar-border flex flex-col z-30">
@@ -181,16 +189,18 @@ export function AppSidebar() {
           <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
         </button>
 
-        {/* User */}
-        <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-sidebar-accent/70 cursor-pointer transition-colors">
+        {/* User + Logout */}
+        <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-sidebar-accent/70 transition-colors">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
-            {roleInitials[role]}
+            {user?.name?.charAt(0)?.toUpperCase() || roleInitials[role]}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-foreground truncate">{roleLabels[role]}</p>
-            <p className="text-[11px] text-muted-foreground truncate">{roleEmails[role]}</p>
+            <p className="text-[13px] font-medium text-foreground truncate">{user?.name || roleLabels[role]}</p>
+            <p className="text-[11px] text-muted-foreground truncate">{user?.email || roleEmails[role]}</p>
           </div>
-          <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+          <button onClick={handleLogout} title="Sign out" className="text-muted-foreground hover:text-destructive transition-colors">
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </aside>
