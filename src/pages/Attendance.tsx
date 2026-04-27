@@ -1,9 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Clock, Wifi, WifiOff, RefreshCw, Settings2, AlertCircle, CheckCircle2, Plus, Save, Trash2, Calendar as CalendarIcon, Download, LogIn, LogOut, Timer, TrendingUp } from "lucide-react";
+import {
+  Clock, Wifi, WifiOff, RefreshCw, Settings2, AlertCircle, CheckCircle2,
+  Plus, Save, Trash2, Calendar as CalendarIcon, Download, LogIn, LogOut,
+  Timer, TrendingUp, Pencil, Send, FileSpreadsheet, History
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription
+} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRole } from "@/contexts/RoleContext";
@@ -12,19 +18,40 @@ import { useToast } from "@/hooks/use-toast";
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 
-const todayLog = [
-  { id: "EMP-1001", name: "Aarav Bhandari", department: "Engineering", checkIn: "08:02", checkOut: "17:10", hours: "9h 08m", status: "Present", source: "Biometric" },
-  { id: "EMP-1002", name: "Priya Sharma", department: "Engineering", checkIn: "08:15", checkOut: "17:25", hours: "9h 10m", status: "Present", source: "Biometric" },
-  { id: "EMP-1004", name: "Sita Magar", department: "HR", checkIn: "08:45", checkOut: "17:00", hours: "8h 15m", status: "Late", source: "Biometric" },
-  { id: "EMP-1007", name: "Dipesh Karki", department: "Engineering", checkIn: "07:58", checkOut: "16:35", hours: "8h 37m", status: "Present", source: "Biometric" },
-  { id: "EMP-1008", name: "Manisha Rai", department: "Design", checkIn: "08:10", checkOut: "—", hours: "Active", status: "Present", source: "Biometric" },
+// ───── Types ─────
+interface DailyRow {
+  id: string; name: string; department: string;
+  checkIn: string; checkOut: string; hours: string;
+  status: "Present" | "Late" | "Absent" | "Complete" | "On Leave";
+  source: string; edited?: boolean; editNote?: string;
+}
+interface MonthlyRow {
+  id: string; name: string; department: string; workingDays: number;
+  present: number; late: number; absent: number; leave: number;
+  totalHours: string; avgHours: string; overtime: string;
+}
+interface Device {
+  id: string; name: string; ip: string; model: string;
+  status: "online" | "offline"; lastSync: string; port: string; protocol: string;
+}
+interface AuditEntry {
+  id: string; empId: string; date: string; field: string;
+  oldValue: string; newValue: string; editor: string; reason: string; at: string;
+}
+
+// ───── Mock Data ─────
+const initialDaily: DailyRow[] = [
+  { id: "EMP-1001", name: "Aarav Bhandari", department: "Engineering", checkIn: "08:02", checkOut: "17:10", hours: "9h 08m", status: "Present", source: "ZKTeco K40" },
+  { id: "EMP-1002", name: "Priya Sharma", department: "Engineering", checkIn: "08:15", checkOut: "17:25", hours: "9h 10m", status: "Present", source: "ZKTeco K40" },
+  { id: "EMP-1004", name: "Sita Magar", department: "HR", checkIn: "08:45", checkOut: "17:00", hours: "8h 15m", status: "Late", source: "ZKTeco K40" },
+  { id: "EMP-1007", name: "Dipesh Karki", department: "Engineering", checkIn: "07:58", checkOut: "16:35", hours: "8h 37m", status: "Present", source: "ZKTeco K40" },
+  { id: "EMP-1008", name: "Manisha Rai", department: "Design", checkIn: "08:10", checkOut: "—", hours: "Active", status: "Present", source: "ZKTeco K40" },
   { id: "EMP-1009", name: "Suresh Tamang", department: "Engineering", checkIn: "—", checkOut: "—", hours: "—", status: "Absent", source: "—" },
-  { id: "EMP-1010", name: "Kavita Shrestha", department: "Support", checkIn: "08:00", checkOut: "16:05", hours: "8h 05m", status: "Complete", source: "Biometric" },
+  { id: "EMP-1010", name: "Kavita Shrestha", department: "Support", checkIn: "08:00", checkOut: "16:05", hours: "8h 05m", status: "Complete", source: "ZKTeco K40" },
   { id: "EMP-1003", name: "Raj Thapa", department: "Marketing", checkIn: "—", checkOut: "—", hours: "—", status: "On Leave", source: "—" },
 ];
 
-// Monthly aggregated report (Jan 2024)
-const monthlyReport = [
+const initialMonthly: MonthlyRow[] = [
   { id: "EMP-1001", name: "Aarav Bhandari", department: "Engineering", workingDays: 22, present: 20, late: 1, absent: 0, leave: 1, totalHours: "178h 30m", avgHours: "8h 55m", overtime: "6h 30m" },
   { id: "EMP-1002", name: "Priya Sharma", department: "Engineering", workingDays: 22, present: 21, late: 0, absent: 0, leave: 1, totalHours: "184h 15m", avgHours: "8h 46m", overtime: "8h 15m" },
   { id: "EMP-1003", name: "Raj Thapa", department: "Marketing", workingDays: 22, present: 17, late: 2, absent: 0, leave: 5, totalHours: "146h 00m", avgHours: "8h 35m", overtime: "0h" },
@@ -37,19 +64,31 @@ const monthlyReport = [
 ];
 
 const statusColors: Record<string, string> = {
-  Present: "status-active", Late: "status-pending", Absent: "status-resigned", Complete: "status-active", "On Leave": "status-onleave",
+  Present: "status-active", Late: "status-pending", Absent: "status-resigned",
+  Complete: "status-active", "On Leave": "status-onleave",
 };
 
-interface Device {
-  id: string; name: string; ip: string; model: string; status: string; lastSync: string; port: string; protocol: string;
-}
-
 const deviceModels = [
-  "ZKTeco SpeedFace-V5L", "ZKTeco ProFace X", "ZKTeco MultiBio 800",
-  "ZKTeco ZFace-M", "ZKTeco uFace 800", "ZKTeco iClock 9000-G"
+  "ZKTeco K40 (4.3\" TFT)",
+  "ZKTeco K40 Pro",
+  "ZKTeco SpeedFace-V5L",
+  "ZKTeco ProFace X",
+  "ZKTeco MultiBio 800",
+  "ZKTeco uFace 800",
 ];
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+// ───── Helpers ─────
+const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+function diffHours(inT: string, outT: string): string {
+  if (!HHMM_RE.test(inT) || !HHMM_RE.test(outT)) return "—";
+  const [ih, im] = inT.split(":").map(Number);
+  const [oh, om] = outT.split(":").map(Number);
+  let mins = oh * 60 + om - (ih * 60 + im);
+  if (mins <= 0) return "—";
+  return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, "0")}m`;
+}
 
 export default function Attendance() {
   const { isHR } = useRole();
@@ -58,22 +97,52 @@ export default function Attendance() {
   const [configDialog, setConfigDialog] = useState(false);
   const [addDeviceDialog, setAddDeviceDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("daily");
-  const [selectedMonth, setSelectedMonth] = useState("0"); // January
+  const [selectedMonth, setSelectedMonth] = useState("0");
   const [selectedYear, setSelectedYear] = useState("2024");
   const [selectedEmployee, setSelectedEmployee] = useState("all");
+
+  const [dailyLog, setDailyLog] = useState<DailyRow[]>(initialDaily);
+  const [monthlyData] = useState<MonthlyRow[]>(initialMonthly);
+  const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
+  const [auditDialog, setAuditDialog] = useState(false);
+
+  // Edit dialog state
+  const [editRow, setEditRow] = useState<DailyRow | null>(null);
+  const [editDraft, setEditDraft] = useState<{ checkIn: string; checkOut: string; status: DailyRow["status"]; reason: string }>({
+    checkIn: "", checkOut: "", status: "Present", reason: ""
+  });
+
   const [devices, setDevices] = useState<Device[]>([
-    { id: "1", name: "Main Entrance", ip: "192.168.1.201", model: "ZKTeco SpeedFace-V5L", status: "online", lastSync: "2 min ago", port: "4370", protocol: "TCP" },
-    { id: "2", name: "Back Gate", ip: "192.168.1.202", model: "ZKTeco ProFace X", status: "online", lastSync: "5 min ago", port: "4370", protocol: "TCP" },
+    { id: "1", name: "Main Entrance", ip: "192.168.1.201", model: "ZKTeco K40 (4.3\" TFT)", status: "online", lastSync: "2 min ago", port: "4370", protocol: "TCP" },
+    { id: "2", name: "Back Gate", ip: "192.168.1.202", model: "ZKTeco K40 Pro", status: "online", lastSync: "5 min ago", port: "4370", protocol: "TCP" },
     { id: "3", name: "Parking", ip: "192.168.1.203", model: "ZKTeco MultiBio 800", status: "offline", lastSync: "3h ago", port: "4370", protocol: "TCP" },
   ]);
-  const [newDevice, setNewDevice] = useState({ name: "", ip: "", port: "4370", model: "", protocol: "TCP" });
+  const [newDevice, setNewDevice] = useState({ name: "", ip: "", port: "4370", model: "ZKTeco K40 (4.3\" TFT)", protocol: "TCP" });
 
-  const handleSync = () => { setSyncing(true); setTimeout(() => { setSyncing(false); toast({ title: "Sync complete", description: "All devices synced." }); }, 2000); };
+  // Persist audit log locally
+  useEffect(() => {
+    const stored = localStorage.getItem("attendance_audit_log");
+    if (stored) setAuditLog(JSON.parse(stored));
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("attendance_audit_log", JSON.stringify(auditLog));
+  }, [auditLog]);
+
+  const handleSync = () => {
+    setSyncing(true);
+    setTimeout(() => {
+      setSyncing(false);
+      toast({ title: "Sync complete", description: "Pulled latest punches from ZKTeco K40 devices via ZKBioAccess." });
+    }, 1500);
+  };
 
   const handleAddDevice = () => {
-    if (!newDevice.name || !newDevice.ip) return;
+    if (!newDevice.name || !newDevice.ip) {
+      toast({ title: "Missing fields", description: "Device name and IP are required.", variant: "destructive" });
+      return;
+    }
     setDevices(prev => [...prev, { ...newDevice, id: String(Date.now()), status: "online", lastSync: "Just now" }]);
-    setNewDevice({ name: "", ip: "", port: "4370", model: "", protocol: "TCP" });
+    setNewDevice({ name: "", ip: "", port: "4370", model: "ZKTeco K40 (4.3\" TFT)", protocol: "TCP" });
     setAddDeviceDialog(false);
     toast({ title: "Device added" });
   };
@@ -83,43 +152,124 @@ export default function Attendance() {
     toast({ title: "Device removed" });
   };
 
-  const handleExport = () => {
-    toast({ title: "Report exported", description: `Monthly report for ${months[Number(selectedMonth)]} ${selectedYear} downloaded.` });
+  // Open edit dialog
+  const openEdit = (row: DailyRow) => {
+    setEditRow(row);
+    setEditDraft({
+      checkIn: HHMM_RE.test(row.checkIn) ? row.checkIn : "",
+      checkOut: HHMM_RE.test(row.checkOut) ? row.checkOut : "",
+      status: row.status,
+      reason: ""
+    });
   };
 
-  // Daily summary derived from todayLog
+  const saveEdit = () => {
+    if (!editRow) return;
+    if (!editDraft.reason.trim()) {
+      toast({ title: "Reason required", description: "Please enter a reason for the manual edit.", variant: "destructive" });
+      return;
+    }
+    const newHours = editDraft.checkIn && editDraft.checkOut
+      ? diffHours(editDraft.checkIn, editDraft.checkOut)
+      : (editDraft.status === "Absent" || editDraft.status === "On Leave") ? "—" : editRow.hours;
+
+    const entries: AuditEntry[] = [];
+    const now = new Date().toISOString();
+    const editor = "HR Admin";
+    if (editDraft.checkIn !== editRow.checkIn) {
+      entries.push({ id: `${Date.now()}-in`, empId: editRow.id, date: "Today", field: "Check-in", oldValue: editRow.checkIn, newValue: editDraft.checkIn || "—", editor, reason: editDraft.reason, at: now });
+    }
+    if (editDraft.checkOut !== editRow.checkOut) {
+      entries.push({ id: `${Date.now()}-out`, empId: editRow.id, date: "Today", field: "Check-out", oldValue: editRow.checkOut, newValue: editDraft.checkOut || "—", editor, reason: editDraft.reason, at: now });
+    }
+    if (editDraft.status !== editRow.status) {
+      entries.push({ id: `${Date.now()}-st`, empId: editRow.id, date: "Today", field: "Status", oldValue: editRow.status, newValue: editDraft.status, editor, reason: editDraft.reason, at: now });
+    }
+    if (entries.length) setAuditLog(prev => [...entries, ...prev].slice(0, 200));
+
+    setDailyLog(prev => prev.map(r => r.id === editRow.id ? {
+      ...r,
+      checkIn: editDraft.checkIn || "—",
+      checkOut: editDraft.checkOut || "—",
+      hours: newHours,
+      status: editDraft.status,
+      source: "Manual Edit",
+      edited: true,
+      editNote: editDraft.reason,
+    } : r));
+
+    toast({ title: "Attendance updated", description: `${editRow.name}'s record was edited successfully.` });
+    setEditRow(null);
+  };
+
+  const handleExport = () => {
+    const rows = filteredMonthly;
+    const csv = [
+      ["Employee ID", "Name", "Department", "Working Days", "Present", "Late", "Absent", "Leave", "Total Hours", "Avg Hours", "Overtime"].join(","),
+      ...rows.map(r => [r.id, r.name, r.department, r.workingDays, r.present, r.late, r.absent, r.leave, `"${r.totalHours}"`, `"${r.avgHours}"`, `"${r.overtime}"`].join(","))
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `attendance-${months[Number(selectedMonth)]}-${selectedYear}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Report exported", description: `Downloaded CSV for ${months[Number(selectedMonth)]} ${selectedYear}.` });
+  };
+
+  const handlePushToPayroll = () => {
+    const payload = {
+      month: months[Number(selectedMonth)],
+      year: selectedYear,
+      generatedAt: new Date().toISOString(),
+      employees: filteredMonthly.map(r => ({
+        id: r.id, name: r.name, department: r.department,
+        workingDays: r.workingDays, presentDays: r.present + r.late,
+        absentDays: r.absent, leaveDays: r.leave,
+        totalHours: r.totalHours, overtime: r.overtime,
+      }))
+    };
+    localStorage.setItem("payroll_attendance_input", JSON.stringify(payload));
+    toast({
+      title: "Pushed to Payroll",
+      description: `${payload.employees.length} employees · ${payload.month} ${payload.year}. Open Payroll to compute salary.`
+    });
+  };
+
+  // Daily summary
   const dailySummary = useMemo(() => ({
-    present: todayLog.filter(r => r.status === "Present").length,
-    complete: todayLog.filter(r => r.status === "Complete").length,
-    late: todayLog.filter(r => r.status === "Late").length,
-    absent: todayLog.filter(r => r.status === "Absent").length,
-    leave: todayLog.filter(r => r.status === "On Leave").length,
-  }), []);
+    present: dailyLog.filter(r => r.status === "Present").length,
+    complete: dailyLog.filter(r => r.status === "Complete").length,
+    late: dailyLog.filter(r => r.status === "Late").length,
+    absent: dailyLog.filter(r => r.status === "Absent").length,
+    leave: dailyLog.filter(r => r.status === "On Leave").length,
+  }), [dailyLog]);
 
-  // Filter monthly report
   const filteredMonthly = useMemo(() => {
-    return selectedEmployee === "all" ? monthlyReport : monthlyReport.filter(r => r.id === selectedEmployee);
-  }, [selectedEmployee]);
+    return selectedEmployee === "all" ? monthlyData : monthlyData.filter(r => r.id === selectedEmployee);
+  }, [selectedEmployee, monthlyData]);
 
-  // Monthly totals
-  const monthlyTotals = useMemo(() => {
-    const totalPresent = filteredMonthly.reduce((s, r) => s + r.present, 0);
-    const totalLate = filteredMonthly.reduce((s, r) => s + r.late, 0);
-    const totalAbsent = filteredMonthly.reduce((s, r) => s + r.absent, 0);
-    const totalLeave = filteredMonthly.reduce((s, r) => s + r.leave, 0);
-    return { totalPresent, totalLate, totalAbsent, totalLeave };
-  }, [filteredMonthly]);
+  const monthlyTotals = useMemo(() => ({
+    totalPresent: filteredMonthly.reduce((s, r) => s + r.present, 0),
+    totalLate: filteredMonthly.reduce((s, r) => s + r.late, 0),
+    totalAbsent: filteredMonthly.reduce((s, r) => s + r.absent, 0),
+    totalLeave: filteredMonthly.reduce((s, r) => s + r.leave, 0),
+  }), [filteredMonthly]);
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+      {/* Header */}
       <motion.div variants={item} className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Attendance</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Daily logs & monthly reports · Synced via ZKTeco ZKBioAccess
+            Daily logs · monthly reports · ZKTeco K40 biometric integration via ZKBioAccess
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={() => setAuditDialog(true)}>
+            <History className="w-3.5 h-3.5" /> Audit Log
+            {auditLog.length > 0 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-mono-data">{auditLog.length}</span>}
+          </Button>
           <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={handleSync}>
             <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Syncing..." : "Sync Now"}
@@ -132,7 +282,10 @@ export default function Attendance() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
-                <DialogHeader><DialogTitle>ZKTeco Device Configuration</DialogTitle></DialogHeader>
+                <DialogHeader>
+                  <DialogTitle>ZKTeco Device Configuration</DialogTitle>
+                  <DialogDescription>Connect ZKTeco K40 biometric devices via ZKBioAccess Web API.</DialogDescription>
+                </DialogHeader>
                 <div className="space-y-4 pt-2">
                   <div className="bg-muted/30 border border-border rounded-lg p-4">
                     <h4 className="text-sm font-semibold mb-3">ZKBioAccess API Connection</h4>
@@ -164,7 +317,7 @@ export default function Attendance() {
                           <Button variant="outline" size="sm" className="gap-1 h-7 text-xs"><Plus className="w-3 h-3" /> Add Device</Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-md">
-                          <DialogHeader><DialogTitle>Add New Device</DialogTitle></DialogHeader>
+                          <DialogHeader><DialogTitle>Add ZKTeco Device</DialogTitle></DialogHeader>
                           <div className="space-y-3 pt-2">
                             <div><label className="text-xs text-muted-foreground mb-1 block">Device Name</label><Input value={newDevice.name} onChange={e => setNewDevice({ ...newDevice, name: e.target.value })} placeholder="e.g., Floor 2 Entrance" className="h-8 text-sm" /></div>
                             <div className="grid grid-cols-2 gap-3">
@@ -173,7 +326,7 @@ export default function Attendance() {
                             </div>
                             <div><label className="text-xs text-muted-foreground mb-1 block">Model</label>
                               <Select value={newDevice.model} onValueChange={v => setNewDevice({ ...newDevice, model: v })}>
-                                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select model" /></SelectTrigger>
+                                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                                 <SelectContent>{deviceModels.map(m => <SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>)}</SelectContent>
                               </Select>
                             </div>
@@ -219,7 +372,7 @@ export default function Attendance() {
         </div>
       </motion.div>
 
-      {/* Tabs: Daily | Monthly */}
+      {/* Tabs */}
       <motion.div variants={item}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
           <TabsList>
@@ -230,7 +383,6 @@ export default function Attendance() {
 
           {/* DAILY TAB */}
           <TabsContent value="daily" className="space-y-5">
-            {/* Summary cards */}
             <div className="grid grid-cols-5 gap-4">
               {[
                 { label: "Present", value: dailySummary.present, icon: CheckCircle2, color: "text-success" },
@@ -249,12 +401,11 @@ export default function Attendance() {
               ))}
             </div>
 
-            {/* Daily table */}
             <div className="glass-card overflow-hidden">
               <div className="px-5 py-4 border-b border-border flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold">Today's Log · <span className="font-mono-data text-muted-foreground">Jan 15, 2024</span></h2>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Check-in / Check-out & total time present in office</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Check-in / Check-out & total time present in office. Click <Pencil className="w-3 h-3 inline -mt-0.5" /> to edit.</p>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="w-3.5 h-3.5" />
@@ -272,19 +423,30 @@ export default function Attendance() {
                     <th><div className="flex items-center gap-1"><Timer className="w-3 h-3" /> Total Time</div></th>
                     <th>Source</th>
                     <th>Status</th>
+                    {isHR && <th className="text-right">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {todayLog.map(row => (
+                  {dailyLog.map(row => (
                     <tr key={row.id}>
                       <td className="font-mono-data text-xs text-muted-foreground">{row.id}</td>
-                      <td className="text-sm font-medium">{row.name}</td>
+                      <td className="text-sm font-medium">
+                        {row.name}
+                        {row.edited && <span title={row.editNote} className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-warning/10 text-warning font-medium">edited</span>}
+                      </td>
                       <td className="text-xs text-muted-foreground">{row.department}</td>
                       <td className="font-mono-data text-xs">{row.checkIn}</td>
                       <td className="font-mono-data text-xs">{row.checkOut}</td>
                       <td className="font-mono-data text-xs font-semibold">{row.hours}</td>
                       <td className="text-xs text-muted-foreground">{row.source}</td>
                       <td><span className={`status-pill ${statusColors[row.status] ?? ""}`}>{row.status}</span></td>
+                      {isHR && (
+                        <td className="text-right">
+                          <Button variant="ghost" size="sm" className="h-7 px-2 gap-1" onClick={() => openEdit(row)}>
+                            <Pencil className="w-3 h-3" /> <span className="text-xs">Edit</span>
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -294,7 +456,6 @@ export default function Attendance() {
 
           {/* MONTHLY TAB */}
           <TabsContent value="monthly" className="space-y-5">
-            {/* Filters */}
             <div className="glass-card p-4 flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <CalendarIcon className="w-4 h-4 text-muted-foreground" />
@@ -302,32 +463,32 @@ export default function Attendance() {
               </div>
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                 <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {months.map((m, i) => <SelectItem key={m} value={String(i)} className="text-xs">{m}</SelectItem>)}
-                </SelectContent>
+                <SelectContent>{months.map((m, i) => <SelectItem key={m} value={String(i)} className="text-xs">{m}</SelectItem>)}</SelectContent>
               </Select>
               <Select value={selectedYear} onValueChange={setSelectedYear}>
                 <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {["2023", "2024", "2025"].map(y => <SelectItem key={y} value={y} className="text-xs">{y}</SelectItem>)}
-                </SelectContent>
+                <SelectContent>{["2023", "2024", "2025"].map(y => <SelectItem key={y} value={y} className="text-xs">{y}</SelectItem>)}</SelectContent>
               </Select>
               <div className="h-6 w-px bg-border" />
               <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
                 <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="All employees" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all" className="text-xs">All Employees</SelectItem>
-                  {monthlyReport.map(e => <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>)}
+                  {monthlyData.map(e => <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <div className="ml-auto">
+              <div className="ml-auto flex items-center gap-2">
                 <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={handleExport}>
-                  <Download className="w-3.5 h-3.5" /> Export Report
+                  <FileSpreadsheet className="w-3.5 h-3.5" /> Export CSV
                 </Button>
+                {isHR && (
+                  <Button size="sm" className="gap-1.5 press-effect" onClick={handlePushToPayroll}>
+                    <Send className="w-3.5 h-3.5" /> Push to Payroll
+                  </Button>
+                )}
               </div>
             </div>
 
-            {/* Monthly summary cards */}
             <div className="grid grid-cols-4 gap-4">
               {[
                 { label: "Total Present Days", value: monthlyTotals.totalPresent, icon: CheckCircle2, color: "text-success" },
@@ -345,28 +506,21 @@ export default function Attendance() {
               ))}
             </div>
 
-            {/* Monthly Report table */}
             <div className="glass-card overflow-hidden">
-              <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-semibold">Monthly Attendance Report · <span className="font-mono-data text-muted-foreground">{months[Number(selectedMonth)]} {selectedYear}</span></h2>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Total time present, leaves, late arrivals, and absences per employee</p>
-                </div>
+              <div className="px-5 py-4 border-b border-border">
+                <h2 className="text-sm font-semibold">Monthly Attendance Report · <span className="font-mono-data text-muted-foreground">{months[Number(selectedMonth)]} {selectedYear}</span></h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Total time present, leaves, late arrivals, and absences per employee. Push to Payroll to feed salary calculation.</p>
               </div>
               <table className="nexus-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Employee</th>
-                    <th>Department</th>
+                    <th>ID</th><th>Employee</th><th>Department</th>
                     <th className="text-center">Working Days</th>
                     <th className="text-center text-success">Present</th>
                     <th className="text-center text-warning">Late</th>
                     <th className="text-center text-destructive">Absent</th>
                     <th className="text-center text-primary">Leave</th>
-                    <th>Total Hours</th>
-                    <th>Avg/Day</th>
-                    <th>Overtime</th>
+                    <th>Total Hours</th><th>Avg/Day</th><th>Overtime</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -427,6 +581,108 @@ export default function Attendance() {
           </TabsContent>
         </Tabs>
       </motion.div>
+
+      {/* ───── Edit Attendance Dialog ───── */}
+      <Dialog open={!!editRow} onOpenChange={(o) => !o && setEditRow(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Attendance Record</DialogTitle>
+            <DialogDescription>
+              {editRow && <span>{editRow.name} · <span className="font-mono-data">{editRow.id}</span></span>}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Check-in</label>
+                <Input type="time" value={editDraft.checkIn} onChange={e => setEditDraft(d => ({ ...d, checkIn: e.target.value }))} className="h-9 font-mono-data" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Check-out</label>
+                <Input type="time" value={editDraft.checkOut} onChange={e => setEditDraft(d => ({ ...d, checkOut: e.target.value }))} className="h-9 font-mono-data" />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+              <Select value={editDraft.status} onValueChange={(v: DailyRow["status"]) => setEditDraft(d => ({ ...d, status: v }))}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Present">Present</SelectItem>
+                  <SelectItem value="Late">Late</SelectItem>
+                  <SelectItem value="Complete">Complete</SelectItem>
+                  <SelectItem value="Absent">Absent</SelectItem>
+                  <SelectItem value="On Leave">On Leave</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Reason for edit <span className="text-destructive">*</span></label>
+              <Input
+                value={editDraft.reason}
+                onChange={e => setEditDraft(d => ({ ...d, reason: e.target.value }))}
+                placeholder="e.g., Forgot to punch out, Device malfunction"
+                className="h-9 text-sm"
+              />
+            </div>
+            {editDraft.checkIn && editDraft.checkOut && (
+              <div className="text-xs text-muted-foreground bg-muted/30 rounded-md p-2 font-mono-data">
+                Computed total time: <span className="font-semibold text-foreground">{diffHours(editDraft.checkIn, editDraft.checkOut)}</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setEditRow(null)}>Cancel</Button>
+            <Button size="sm" className="gap-1.5" onClick={saveEdit}>
+              <Save className="w-3.5 h-3.5" /> Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ───── Audit Log Dialog ───── */}
+      <Dialog open={auditDialog} onOpenChange={setAuditDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Manual Edit Audit Log</DialogTitle>
+            <DialogDescription>All manual changes to attendance records are tracked here.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            {auditLog.length === 0 ? (
+              <div className="text-center text-sm text-muted-foreground py-10">No manual edits yet.</div>
+            ) : (
+              <table className="nexus-table">
+                <thead>
+                  <tr>
+                    <th>When</th><th>Employee</th><th>Field</th>
+                    <th>Old</th><th>New</th><th>Reason</th><th>Editor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLog.map(a => (
+                    <tr key={a.id}>
+                      <td className="text-[11px] text-muted-foreground font-mono-data">{new Date(a.at).toLocaleString()}</td>
+                      <td className="text-xs font-mono-data">{a.empId}</td>
+                      <td className="text-xs">{a.field}</td>
+                      <td className="text-xs font-mono-data text-destructive">{a.oldValue}</td>
+                      <td className="text-xs font-mono-data text-success">{a.newValue}</td>
+                      <td className="text-xs text-muted-foreground">{a.reason}</td>
+                      <td className="text-xs">{a.editor}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setAuditDialog(false)}>Close</Button>
+            {auditLog.length > 0 && (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setAuditLog([]); toast({ title: "Audit log cleared" }); }}>
+                <Trash2 className="w-3.5 h-3.5" /> Clear Log
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
