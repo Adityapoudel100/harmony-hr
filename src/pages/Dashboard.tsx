@@ -70,6 +70,27 @@ export default function Dashboard() {
   // Dates that have holidays or leaves (for calendar highlighting)
   const holidayDates = upcomingHolidays.map(h => new Date(h.date));
 
+  // Upcoming birthdays — visible to all roles
+  const upcomingBirthdays = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return EMPLOYEES
+      .filter(e => e.dob && e.status !== "Resigned" && e.status !== "Inactive")
+      .map(e => {
+        const dob = new Date(e.dob as string);
+        const next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+        if (next < today) next.setFullYear(today.getFullYear() + 1);
+        const daysAway = Math.round((next.getTime() - today.getTime()) / 86400000);
+        const turning = next.getFullYear() - dob.getFullYear();
+        return { id: e.id, name: e.name, department: e.department, dob: e.dob as string, next, daysAway, turning };
+      })
+      .sort((a, b) => a.daysAway - b.daysAway)
+      .slice(0, 6);
+  }, []);
+
+  const { sorted: sortedPending, sort: pendingSort, toggle: togglePending } =
+    useSortable<typeof pendingActions[number], "id" | "name" | "action" | "dept" | "time">(pendingActions);
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={item}>
