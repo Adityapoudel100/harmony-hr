@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Users, CalendarDays, AlertTriangle,
-  UserPlus, ArrowUpRight, Activity, Calendar as CalendarIcon
+  UserPlus, ArrowUpRight, Activity, Calendar as CalendarIcon, Cake
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { useRole } from "@/contexts/RoleContext";
+import { EMPLOYEES } from "@/data/mock-data";
+import { useSortable } from "@/hooks/use-sortable";
+import { SortableTh } from "@/components/SortableTh";
 
 const container = {
   hidden: { opacity: 0 },
