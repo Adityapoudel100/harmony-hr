@@ -223,6 +223,57 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
+      {/* Upcoming Birthdays — visible to everyone */}
+      <motion.div variants={item} className="glass-card overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Cake className="w-4 h-4 text-accent" />
+            <h2 className="text-sm font-semibold">Upcoming Birthdays</h2>
+          </div>
+          <span className="status-pill status-pending">{upcomingBirthdays.length}</span>
+        </div>
+        {upcomingBirthdays.length === 0 ? (
+          <div className="p-6 text-center text-sm text-muted-foreground">No upcoming birthdays.</div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-3">
+            {upcomingBirthdays.map((b) => {
+              const isToday = b.daysAway === 0;
+              return (
+                <div
+                  key={b.id}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
+                    isToday
+                      ? "border-accent/40 bg-accent/10"
+                      : "border-border hover:bg-accent/5"
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-accent/15 flex flex-col items-center justify-center shrink-0">
+                    <span className="text-[9px] font-semibold text-accent leading-none uppercase">
+                      {b.next.toLocaleDateString("en", { month: "short" })}
+                    </span>
+                    <span className="text-sm font-bold text-accent leading-none mt-0.5">
+                      {b.next.getDate()}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate flex items-center gap-1.5">
+                      {b.name}
+                      {isToday && <Cake className="w-3 h-3 text-accent" />}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {b.department} · turning {b.turning} ·{" "}
+                      <span className="font-mono-data">
+                        {isToday ? "Today" : b.daysAway === 1 ? "Tomorrow" : `in ${b.daysAway} days`}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
+
       {/* Pending Actions Table */}
       {isHR && (
         <motion.div variants={item} className="glass-card overflow-hidden">
@@ -233,15 +284,15 @@ export default function Dashboard() {
           <table className="nexus-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Employee</th>
-                <th>Action Required</th>
-                <th>Department</th>
-                <th>Time</th>
+                <SortableTh label="ID" sortKey="id" sort={pendingSort} onToggle={togglePending} />
+                <SortableTh label="Employee" sortKey="name" sort={pendingSort} onToggle={togglePending} />
+                <SortableTh label="Action Required" sortKey="action" sort={pendingSort} onToggle={togglePending} />
+                <SortableTh label="Department" sortKey="dept" sort={pendingSort} onToggle={togglePending} />
+                <SortableTh label="Time" sortKey="time" sort={pendingSort} onToggle={togglePending} />
               </tr>
             </thead>
             <tbody>
-              {pendingActions.map((action) => (
+              {sortedPending.map((action) => (
                 <tr key={action.id} className="cursor-pointer">
                   <td className="font-mono-data text-xs text-muted-foreground">{action.id}</td>
                   <td className="font-medium text-sm">{action.name}</td>
