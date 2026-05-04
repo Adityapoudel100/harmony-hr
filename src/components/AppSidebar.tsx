@@ -74,6 +74,12 @@ const employeeNav = [
     items: [{ to: "/", icon: LayoutDashboard, label: "Dashboard" }],
   },
   {
+    label: "Workspace",
+    items: [
+      { to: "/employees", icon: Users, label: "Directory" },
+    ],
+  },
+  {
     label: "Self-Service",
     items: [
       { to: "/ess", icon: FileText, label: "My Profile" },

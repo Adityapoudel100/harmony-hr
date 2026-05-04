@@ -12,14 +12,14 @@ import type {
 export const EMPLOYEES: Employee[] = [
   { id: "EMP-1001", name: "Aarav Bhandari", email: "aarav@nexus.io", phone: "+977-9812345678", department: "Engineering", designation: "Sr. Developer", status: "Active", joinDate: "2023-01-15", type: "Full-time", dob: "1995-03-15", gender: "Male", maritalStatus: "Single", fatherName: "Ram Bhandari", grandfatherName: "Hari Bhandari", motherName: "Sita Bhandari", currentAddress: "Kathmandu, Nepal", permanentAddress: "Pokhara, Nepal", level: "Senior", hierarchy: "Team Lead → Engineering Manager → CTO", previousExperience: "4 years", employmentStatus: "Active" },
   { id: "EMP-1002", name: "Priya Sharma", email: "priya@nexus.io", phone: "+977-9823456789", department: "Engineering", designation: "DevOps Lead", status: "Active", joinDate: "2022-06-01", type: "Full-time", dob: "1993-07-22", gender: "Female", maritalStatus: "Married", fatherName: "Shyam Sharma", grandfatherName: "Gopal Sharma", motherName: "Gita Sharma", currentAddress: "Lalitpur, Nepal", permanentAddress: "Birgunj, Nepal", level: "Lead", hierarchy: "DevOps Lead → Engineering Manager → CTO", previousExperience: "6 years", employmentStatus: "Active" },
-  { id: "EMP-1003", name: "Raj Thapa", email: "raj@nexus.io", department: "Marketing", designation: "Campaign Manager", status: "On Leave", joinDate: "2023-03-20", type: "Full-time" },
-  { id: "EMP-1004", name: "Sita Magar", email: "sita@nexus.io", department: "HR", designation: "HR Coordinator", status: "Active", joinDate: "2022-11-10", type: "Full-time" },
-  { id: "EMP-1005", name: "Bikash Gurung", email: "bikash@nexus.io", department: "Operations", designation: "Ops Manager", status: "Resigned", joinDate: "2021-08-05", type: "Full-time" },
-  { id: "EMP-1006", name: "Anita KC", email: "anita@nexus.io", department: "Finance", designation: "Accountant", status: "Onboarding", joinDate: "2024-01-08", type: "Full-time" },
-  { id: "EMP-1007", name: "Dipesh Karki", email: "dipesh@nexus.io", department: "Engineering", designation: "Frontend Dev", status: "Active", joinDate: "2023-07-12", type: "Contract" },
-  { id: "EMP-1008", name: "Manisha Rai", email: "manisha@nexus.io", department: "Design", designation: "UI Designer", status: "Active", joinDate: "2023-05-22", type: "Full-time" },
-  { id: "EMP-1009", name: "Suresh Tamang", email: "suresh@nexus.io", department: "Engineering", designation: "Backend Dev", status: "Notice Period", joinDate: "2022-09-14", type: "Full-time" },
-  { id: "EMP-1010", name: "Kavita Shrestha", email: "kavita@nexus.io", department: "Support", designation: "Support Lead", status: "Active", joinDate: "2023-02-28", type: "Full-time" },
+  { id: "EMP-1003", name: "Raj Thapa", email: "raj@nexus.io", department: "Marketing", designation: "Campaign Manager", status: "On Leave", joinDate: "2023-03-20", type: "Full-time", dob: "1994-05-09" },
+  { id: "EMP-1004", name: "Sita Magar", email: "sita@nexus.io", department: "HR", designation: "HR Coordinator", status: "Active", joinDate: "2022-11-10", type: "Full-time", dob: "1996-11-23" },
+  { id: "EMP-1005", name: "Bikash Gurung", email: "bikash@nexus.io", department: "Operations", designation: "Ops Manager", status: "Resigned", joinDate: "2021-08-05", type: "Full-time", dob: "1990-02-14" },
+  { id: "EMP-1006", name: "Anita KC", email: "anita@nexus.io", department: "Finance", designation: "Accountant", status: "Onboarding", joinDate: "2024-01-08", type: "Full-time", dob: "1998-08-30" },
+  { id: "EMP-1007", name: "Dipesh Karki", email: "dipesh@nexus.io", department: "Engineering", designation: "Frontend Dev", status: "Active", joinDate: "2023-07-12", type: "Contract", dob: "1997-04-02" },
+  { id: "EMP-1008", name: "Manisha Rai", email: "manisha@nexus.io", department: "Design", designation: "UI Designer", status: "Active", joinDate: "2023-05-22", type: "Full-time", dob: "1999-12-18" },
+  { id: "EMP-1009", name: "Suresh Tamang", email: "suresh@nexus.io", department: "Engineering", designation: "Backend Dev", status: "Notice Period", joinDate: "2022-09-14", type: "Full-time", dob: "1992-06-07" },
+  { id: "EMP-1010", name: "Kavita Shrestha", email: "kavita@nexus.io", department: "Support", designation: "Support Lead", status: "Active", joinDate: "2023-02-28", type: "Full-time", dob: "1995-09-21" },
 ];
 
 export const DEPARTMENTS = ["Engineering", "Marketing", "HR", "Operations", "Finance", "Design", "Support"];
