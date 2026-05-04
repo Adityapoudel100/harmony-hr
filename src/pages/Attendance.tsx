@@ -12,8 +12,39 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useRole } from "@/contexts/RoleContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { ShieldCheck } from "lucide-react";
+
+const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const RULES_KEY = "attendance_rules_v1";
+
+interface AttendanceRules {
+  shiftStart: string;       // "09:00"
+  shiftEnd: string;         // "17:00"
+  graceMinutes: number;     // late tolerance
+  autoCheckoutEnabled: boolean;
+  autoCheckoutTime: string; // "20:00"
+  fullDayHours: number;     // for total time / payroll
+  halfDayHours: number;
+  offDays: number[];        // 0=Sun..6=Sat
+  countOvertimeAfter: number; // minutes after shiftEnd
+}
+
+const DEFAULT_RULES: AttendanceRules = {
+  shiftStart: "09:00",
+  shiftEnd: "17:00",
+  graceMinutes: 15,
+  autoCheckoutEnabled: true,
+  autoCheckoutTime: "20:00",
+  fullDayHours: 8,
+  halfDayHours: 4,
+  offDays: [6, 0], // Sat, Sun
+  countOvertimeAfter: 30,
+};
 
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
