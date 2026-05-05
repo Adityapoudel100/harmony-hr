@@ -3,8 +3,9 @@ import { motion } from "framer-motion";
 import {
   Clock, Wifi, WifiOff, RefreshCw, Settings2, AlertCircle, CheckCircle2,
   Plus, Save, Trash2, Calendar as CalendarIcon, Download, LogIn, LogOut,
-  Timer, TrendingUp, Pencil, Send, FileSpreadsheet, History
+  Timer, TrendingUp, Pencil, Send, FileSpreadsheet, History, Inbox, Check, X
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
