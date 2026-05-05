@@ -195,6 +195,77 @@ export default function Attendance() {
     localStorage.setItem("attendance_audit_log", JSON.stringify(auditLog));
   }, [auditLog]);
 
+  // Persist correction requests
+  useEffect(() => {
+    const stored = localStorage.getItem(REQUESTS_KEY);
+    if (stored) {
+      try { setRequests(JSON.parse(stored)); } catch { /* ignore */ }
+    }
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+  }, [requests]);
+
+  const submitCorrectionRequest = () => {
+    if (!reqDraft.reason.trim()) {
+      toast({ title: "Reason required", description: "Please describe what went wrong.", variant: "destructive" });
+      return;
+    }
+    if (reqDraft.type !== "check-out" && !reqDraft.requestedCheckIn) {
+      toast({ title: "Check-in time required", variant: "destructive" });
+      return;
+    }
+    if (reqDraft.type !== "check-in" && !reqDraft.requestedCheckOut) {
+      toast({ title: "Check-out time required", variant: "destructive" });
+      return;
+    }
+    const req: CorrectionRequest = {
+      id: `REQ-${Date.now()}`,
+      empId: myEmpId || "EMP-?",
+      empName: user?.name || me?.name || "Employee",
+      date: reqDraft.date,
+      type: reqDraft.type,
+      requestedCheckIn: reqDraft.type !== "check-out" ? reqDraft.requestedCheckIn : undefined,
+      requestedCheckOut: reqDraft.type !== "check-in" ? reqDraft.requestedCheckOut : undefined,
+      reason: reqDraft.reason.trim(),
+      status: "Pending",
+      submittedAt: new Date().toISOString(),
+    };
+    setRequests(prev => [req, ...prev]);
+    setRequestDialog(false);
+    setReqDraft({ date: new Date().toISOString().slice(0, 10), type: "check-in", requestedCheckIn: "", requestedCheckOut: "", reason: "" });
+    toast({ title: "Request submitted", description: "HR/Admin will review your attendance correction." });
+  };
+
+  const reviewRequest = (id: string, decision: "Approved" | "Rejected", note?: string) => {
+    let approved: CorrectionRequest | undefined;
+    setRequests(prev => prev.map(r => {
+      if (r.id !== id) return r;
+      approved = { ...r, status: decision, reviewedBy: user?.name || "HR Admin", reviewNote: note, reviewedAt: new Date().toISOString() };
+      return approved;
+    }));
+    if (decision === "Approved" && approved) {
+      // Apply to daily log if same employee row exists
+      setDailyLog(prev => prev.map(row => {
+        if (row.id !== approved!.empId) return row;
+        const newIn = approved!.requestedCheckIn ?? row.checkIn;
+        const newOut = approved!.requestedCheckOut ?? row.checkOut;
+        const newHours = HHMM_RE.test(newIn) && HHMM_RE.test(newOut) ? diffHours(newIn, newOut) : row.hours;
+        return { ...row, checkIn: newIn, checkOut: newOut, hours: newHours, status: "Present", source: "Approved Request", edited: true, editNote: approved!.reason };
+      }));
+      const now = new Date().toISOString();
+      setAuditLog(prev => [{
+        id: `${Date.now()}-req`, empId: approved!.empId, date: approved!.date, field: "Correction Approved",
+        oldValue: "missed punch", newValue: `${approved!.requestedCheckIn ?? "—"} / ${approved!.requestedCheckOut ?? "—"}`,
+        editor: user?.name || "HR Admin", reason: approved!.reason, at: now,
+      }, ...prev].slice(0, 200));
+    }
+    toast({ title: `Request ${decision.toLowerCase()}` });
+  };
+
+  const myRequests = useMemo(() => requests.filter(r => r.empId === myEmpId), [requests, myEmpId]);
+  const pendingRequests = useMemo(() => requests.filter(r => r.status === "Pending"), [requests]);
+
   const handleSync = () => {
     setSyncing(true);
     setTimeout(() => {
