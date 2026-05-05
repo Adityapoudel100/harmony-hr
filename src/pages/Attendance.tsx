@@ -3,8 +3,9 @@ import { motion } from "framer-motion";
 import {
   Clock, Wifi, WifiOff, RefreshCw, Settings2, AlertCircle, CheckCircle2,
   Plus, Save, Trash2, Calendar as CalendarIcon, Download, LogIn, LogOut,
-  Timer, TrendingUp, Pencil, Send, FileSpreadsheet, History
+  Timer, TrendingUp, Pencil, Send, FileSpreadsheet, History, Inbox, Check, X
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -69,6 +70,22 @@ interface AuditEntry {
   id: string; empId: string; date: string; field: string;
   oldValue: string; newValue: string; editor: string; reason: string; at: string;
 }
+interface CorrectionRequest {
+  id: string;
+  empId: string;
+  empName: string;
+  date: string;            // ISO date
+  type: "check-in" | "check-out" | "both";
+  requestedCheckIn?: string;
+  requestedCheckOut?: string;
+  reason: string;
+  status: "Pending" | "Approved" | "Rejected";
+  submittedAt: string;
+  reviewedBy?: string;
+  reviewNote?: string;
+  reviewedAt?: string;
+}
+const REQUESTS_KEY = "attendance_correction_requests_v1";
 
 // ───── Mock Data ─────
 const initialDaily: DailyRow[] = [
@@ -122,7 +139,8 @@ function diffHours(inT: string, outT: string): string {
 }
 
 export default function Attendance() {
-  const { isHR } = useRole();
+  const { isHR, isEmployee } = useRole();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [syncing, setSyncing] = useState(false);
   const [configDialog, setConfigDialog] = useState(false);
@@ -136,6 +154,24 @@ export default function Attendance() {
   const [monthlyData] = useState<MonthlyRow[]>(initialMonthly);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [auditDialog, setAuditDialog] = useState(false);
+  const [requests, setRequests] = useState<CorrectionRequest[]>([]);
+  const [requestDialog, setRequestDialog] = useState(false);
+  const [inboxDialog, setInboxDialog] = useState(false);
+  const [reqDraft, setReqDraft] = useState({
+    date: new Date().toISOString().slice(0, 10),
+    type: "check-in" as CorrectionRequest["type"],
+    requestedCheckIn: "",
+    requestedCheckOut: "",
+    reason: "",
+  });
+
+  // Identify which row belongs to the logged-in employee (demo: match by name, fallback EMP-1001)
+  const myEmpId = useMemo(() => {
+    if (!isEmployee) return null;
+    const match = initialDaily.find(r => r.name.toLowerCase() === (user?.name || "").toLowerCase());
+    return match?.id ?? "EMP-1001";
+  }, [isEmployee, user]);
+  const me = useMemo(() => initialDaily.find(r => r.id === myEmpId), [myEmpId]);
 
   // Edit dialog state
   const [editRow, setEditRow] = useState<DailyRow | null>(null);
@@ -158,6 +194,77 @@ export default function Attendance() {
   useEffect(() => {
     localStorage.setItem("attendance_audit_log", JSON.stringify(auditLog));
   }, [auditLog]);
+
+  // Persist correction requests
+  useEffect(() => {
+    const stored = localStorage.getItem(REQUESTS_KEY);
+    if (stored) {
+      try { setRequests(JSON.parse(stored)); } catch { /* ignore */ }
+    }
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+  }, [requests]);
+
+  const submitCorrectionRequest = () => {
+    if (!reqDraft.reason.trim()) {
+      toast({ title: "Reason required", description: "Please describe what went wrong.", variant: "destructive" });
+      return;
+    }
+    if (reqDraft.type !== "check-out" && !reqDraft.requestedCheckIn) {
+      toast({ title: "Check-in time required", variant: "destructive" });
+      return;
+    }
+    if (reqDraft.type !== "check-in" && !reqDraft.requestedCheckOut) {
+      toast({ title: "Check-out time required", variant: "destructive" });
+      return;
+    }
+    const req: CorrectionRequest = {
+      id: `REQ-${Date.now()}`,
+      empId: myEmpId || "EMP-?",
+      empName: user?.name || me?.name || "Employee",
+      date: reqDraft.date,
+      type: reqDraft.type,
+      requestedCheckIn: reqDraft.type !== "check-out" ? reqDraft.requestedCheckIn : undefined,
+      requestedCheckOut: reqDraft.type !== "check-in" ? reqDraft.requestedCheckOut : undefined,
+      reason: reqDraft.reason.trim(),
+      status: "Pending",
+      submittedAt: new Date().toISOString(),
+    };
+    setRequests(prev => [req, ...prev]);
+    setRequestDialog(false);
+    setReqDraft({ date: new Date().toISOString().slice(0, 10), type: "check-in", requestedCheckIn: "", requestedCheckOut: "", reason: "" });
+    toast({ title: "Request submitted", description: "HR/Admin will review your attendance correction." });
+  };
+
+  const reviewRequest = (id: string, decision: "Approved" | "Rejected", note?: string) => {
+    let approved: CorrectionRequest | undefined;
+    setRequests(prev => prev.map(r => {
+      if (r.id !== id) return r;
+      approved = { ...r, status: decision, reviewedBy: user?.name || "HR Admin", reviewNote: note, reviewedAt: new Date().toISOString() };
+      return approved;
+    }));
+    if (decision === "Approved" && approved) {
+      // Apply to daily log if same employee row exists
+      setDailyLog(prev => prev.map(row => {
+        if (row.id !== approved!.empId) return row;
+        const newIn = approved!.requestedCheckIn ?? row.checkIn;
+        const newOut = approved!.requestedCheckOut ?? row.checkOut;
+        const newHours = HHMM_RE.test(newIn) && HHMM_RE.test(newOut) ? diffHours(newIn, newOut) : row.hours;
+        return { ...row, checkIn: newIn, checkOut: newOut, hours: newHours, status: "Present", source: "Approved Request", edited: true, editNote: approved!.reason };
+      }));
+      const now = new Date().toISOString();
+      setAuditLog(prev => [{
+        id: `${Date.now()}-req`, empId: approved!.empId, date: approved!.date, field: "Correction Approved",
+        oldValue: "missed punch", newValue: `${approved!.requestedCheckIn ?? "—"} / ${approved!.requestedCheckOut ?? "—"}`,
+        editor: user?.name || "HR Admin", reason: approved!.reason, at: now,
+      }, ...prev].slice(0, 200));
+    }
+    toast({ title: `Request ${decision.toLowerCase()}` });
+  };
+
+  const myRequests = useMemo(() => requests.filter(r => r.empId === myEmpId), [requests, myEmpId]);
+  const pendingRequests = useMemo(() => requests.filter(r => r.status === "Pending"), [requests]);
 
   const handleSync = () => {
     setSyncing(true);
@@ -276,8 +383,9 @@ export default function Attendance() {
   }), [dailyLog]);
 
   const filteredMonthly = useMemo(() => {
+    if (isEmployee) return monthlyData.filter(r => r.id === myEmpId);
     return selectedEmployee === "all" ? monthlyData : monthlyData.filter(r => r.id === selectedEmployee);
-  }, [selectedEmployee, monthlyData]);
+  }, [selectedEmployee, monthlyData, isEmployee, myEmpId]);
 
   const monthlyTotals = useMemo(() => ({
     totalPresent: filteredMonthly.reduce((s, r) => s + r.present, 0),
@@ -297,14 +405,29 @@ export default function Attendance() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={() => setAuditDialog(true)}>
-            <History className="w-3.5 h-3.5" /> Audit Log
-            {auditLog.length > 0 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-mono-data">{auditLog.length}</span>}
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={handleSync}>
-            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing..." : "Sync Now"}
-          </Button>
+          {isEmployee && (
+            <Button size="sm" className="gap-1.5 press-effect" onClick={() => setRequestDialog(true)}>
+              <Send className="w-3.5 h-3.5" /> Request Correction
+            </Button>
+          )}
+          {isHR && (
+            <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={() => setInboxDialog(true)}>
+              <Inbox className="w-3.5 h-3.5" /> Requests
+              {pendingRequests.length > 0 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-warning/15 text-warning font-mono-data">{pendingRequests.length}</span>}
+            </Button>
+          )}
+          {isHR && (
+            <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={() => setAuditDialog(true)}>
+              <History className="w-3.5 h-3.5" /> Audit Log
+              {auditLog.length > 0 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-mono-data">{auditLog.length}</span>}
+            </Button>
+          )}
+          {isHR && (
+            <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={handleSync}>
+              <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing..." : "Sync Now"}
+            </Button>
+          )}
           {isHR && (
             <Dialog open={configDialog} onOpenChange={setConfigDialog}>
               <DialogTrigger asChild>
@@ -407,9 +530,10 @@ export default function Attendance() {
       <motion.div variants={item}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
           <TabsList>
-            <TabsTrigger value="daily" className="gap-1.5"><CalendarIcon className="w-3.5 h-3.5" /> Daily Log</TabsTrigger>
-            <TabsTrigger value="monthly" className="gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> Monthly Report</TabsTrigger>
-            <TabsTrigger value="devices" className="gap-1.5"><Wifi className="w-3.5 h-3.5" /> Devices</TabsTrigger>
+            <TabsTrigger value="daily" className="gap-1.5"><CalendarIcon className="w-3.5 h-3.5" /> {isEmployee ? "My Daily Log" : "Daily Log"}</TabsTrigger>
+            <TabsTrigger value="monthly" className="gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> {isEmployee ? "My Monthly Report" : "Monthly Report"}</TabsTrigger>
+            {isEmployee && <TabsTrigger value="requests" className="gap-1.5"><Send className="w-3.5 h-3.5" /> My Requests{myRequests.length > 0 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-mono-data">{myRequests.length}</span>}</TabsTrigger>}
+            {!isEmployee && <TabsTrigger value="devices" className="gap-1.5"><Wifi className="w-3.5 h-3.5" /> Devices</TabsTrigger>}
           </TabsList>
 
           {/* DAILY TAB */}
@@ -458,7 +582,7 @@ export default function Attendance() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dailyLog.map(row => (
+                  {(isEmployee ? dailyLog.filter(r => r.id === myEmpId) : dailyLog).map(row => (
                     <tr key={row.id}>
                       <td className="font-mono-data text-xs text-muted-foreground">{row.id}</td>
                       <td className="text-sm font-medium">
@@ -480,6 +604,9 @@ export default function Attendance() {
                       )}
                     </tr>
                   ))}
+                  {isEmployee && !dailyLog.find(r => r.id === myEmpId) && (
+                    <tr><td colSpan={8} className="text-center text-xs text-muted-foreground py-6">No attendance record for today. If you forgot to punch, click <span className="font-semibold">Request Correction</span>.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -500,14 +627,18 @@ export default function Attendance() {
                 <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>{["2023", "2024", "2025"].map(y => <SelectItem key={y} value={y} className="text-xs">{y}</SelectItem>)}</SelectContent>
               </Select>
-              <div className="h-6 w-px bg-border" />
-              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-                <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="All employees" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="text-xs">All Employees</SelectItem>
-                  {monthlyData.map(e => <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {!isEmployee && (
+                <>
+                  <div className="h-6 w-px bg-border" />
+                  <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                    <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="All employees" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="text-xs">All Employees</SelectItem>
+                      {monthlyData.map(e => <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
               <div className="ml-auto flex items-center gap-2">
                 <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={handleExport}>
                   <FileSpreadsheet className="w-3.5 h-3.5" /> Export CSV
@@ -610,6 +741,42 @@ export default function Attendance() {
               ))}
             </div>
           </TabsContent>
+
+          {/* MY REQUESTS TAB (employee) */}
+          {isEmployee && (
+            <TabsContent value="requests" className="space-y-4">
+              <div className="glass-card overflow-hidden">
+                <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+                  <div>
+                    <h2 className="text-sm font-semibold">My Attendance Correction Requests</h2>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Submit a request when a check-in or check-out is missed. HR/Admin will review and approve.</p>
+                  </div>
+                  <Button size="sm" className="gap-1.5 press-effect" onClick={() => setRequestDialog(true)}>
+                    <Plus className="w-3.5 h-3.5" /> New Request
+                  </Button>
+                </div>
+                {myRequests.length === 0 ? (
+                  <div className="text-center text-sm text-muted-foreground py-10">No requests yet.</div>
+                ) : (
+                  <table className="nexus-table">
+                    <thead><tr><th>Date</th><th>Type</th><th>Requested Times</th><th>Reason</th><th>Status</th><th>Reviewed By</th></tr></thead>
+                    <tbody>
+                      {myRequests.map(r => (
+                        <tr key={r.id}>
+                          <td className="font-mono-data text-xs">{r.date}</td>
+                          <td className="text-xs capitalize">{r.type}</td>
+                          <td className="font-mono-data text-xs">{r.requestedCheckIn ?? "—"} / {r.requestedCheckOut ?? "—"}</td>
+                          <td className="text-xs text-muted-foreground max-w-[260px] truncate" title={r.reason}>{r.reason}</td>
+                          <td><span className={`status-pill ${r.status === "Approved" ? "status-active" : r.status === "Rejected" ? "status-resigned" : "status-pending"}`}>{r.status}</span></td>
+                          <td className="text-xs text-muted-foreground">{r.reviewedBy ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </motion.div>
 
@@ -711,6 +878,113 @@ export default function Attendance() {
                 <Trash2 className="w-3.5 h-3.5" /> Clear Log
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ───── Employee: New Correction Request Dialog ───── */}
+      <Dialog open={requestDialog} onOpenChange={setRequestDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request Attendance Correction</DialogTitle>
+            <DialogDescription>Submit a request to HR/Admin for a missed check-in or check-out.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                <Input type="date" value={reqDraft.date} onChange={e => setReqDraft(d => ({ ...d, date: e.target.value }))} className="h-9 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Request Type</label>
+                <Select value={reqDraft.type} onValueChange={(v: CorrectionRequest["type"]) => setReqDraft(d => ({ ...d, type: v }))}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="check-in">Missed Check-in</SelectItem>
+                    <SelectItem value="check-out">Missed Check-out</SelectItem>
+                    <SelectItem value="both">Both</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {reqDraft.type !== "check-out" && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Check-in time</label>
+                  <Input type="time" value={reqDraft.requestedCheckIn} onChange={e => setReqDraft(d => ({ ...d, requestedCheckIn: e.target.value }))} className="h-9 font-mono-data" />
+                </div>
+              )}
+              {reqDraft.type !== "check-in" && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Check-out time</label>
+                  <Input type="time" value={reqDraft.requestedCheckOut} onChange={e => setReqDraft(d => ({ ...d, requestedCheckOut: e.target.value }))} className="h-9 font-mono-data" />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Reason <span className="text-destructive">*</span></label>
+              <Textarea rows={3} value={reqDraft.reason} onChange={e => setReqDraft(d => ({ ...d, reason: e.target.value }))} placeholder="e.g., Forgot to punch out, device offline, came directly from client site." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setRequestDialog(false)}>Cancel</Button>
+            <Button size="sm" className="gap-1.5" onClick={submitCorrectionRequest}>
+              <Send className="w-3.5 h-3.5" /> Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ───── HR: Requests Inbox Dialog ───── */}
+      <Dialog open={inboxDialog} onOpenChange={setInboxDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Attendance Correction Requests</DialogTitle>
+            <DialogDescription>Approve or reject employee-submitted check-in / check-out corrections.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[65vh] overflow-y-auto">
+            {requests.length === 0 ? (
+              <div className="text-center text-sm text-muted-foreground py-10">No requests submitted yet.</div>
+            ) : (
+              <table className="nexus-table">
+                <thead>
+                  <tr>
+                    <th>Submitted</th><th>Employee</th><th>Date</th><th>Type</th>
+                    <th>Requested</th><th>Reason</th><th>Status</th><th className="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map(r => (
+                    <tr key={r.id}>
+                      <td className="text-[11px] text-muted-foreground font-mono-data">{new Date(r.submittedAt).toLocaleString()}</td>
+                      <td className="text-xs"><div className="font-medium">{r.empName}</div><div className="text-[11px] text-muted-foreground font-mono-data">{r.empId}</div></td>
+                      <td className="font-mono-data text-xs">{r.date}</td>
+                      <td className="text-xs capitalize">{r.type}</td>
+                      <td className="font-mono-data text-xs">{r.requestedCheckIn ?? "—"} / {r.requestedCheckOut ?? "—"}</td>
+                      <td className="text-xs text-muted-foreground max-w-[200px]" title={r.reason}>{r.reason}</td>
+                      <td><span className={`status-pill ${r.status === "Approved" ? "status-active" : r.status === "Rejected" ? "status-resigned" : "status-pending"}`}>{r.status}</span></td>
+                      <td className="text-right">
+                        {r.status === "Pending" ? (
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="outline" className="h-7 px-2 gap-1" onClick={() => reviewRequest(r.id, "Approved")}>
+                              <Check className="w-3 h-3 text-success" /><span className="text-xs">Approve</span>
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 px-2 gap-1" onClick={() => reviewRequest(r.id, "Rejected")}>
+                              <X className="w-3 h-3 text-destructive" /><span className="text-xs">Reject</span>
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">{r.reviewedBy}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setInboxDialog(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
