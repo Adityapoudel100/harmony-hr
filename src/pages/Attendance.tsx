@@ -404,14 +404,29 @@ export default function Attendance() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={() => setAuditDialog(true)}>
-            <History className="w-3.5 h-3.5" /> Audit Log
-            {auditLog.length > 0 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-mono-data">{auditLog.length}</span>}
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={handleSync}>
-            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing..." : "Sync Now"}
-          </Button>
+          {isEmployee && (
+            <Button size="sm" className="gap-1.5 press-effect" onClick={() => setRequestDialog(true)}>
+              <Send className="w-3.5 h-3.5" /> Request Correction
+            </Button>
+          )}
+          {isHR && (
+            <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={() => setInboxDialog(true)}>
+              <Inbox className="w-3.5 h-3.5" /> Requests
+              {pendingRequests.length > 0 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-warning/15 text-warning font-mono-data">{pendingRequests.length}</span>}
+            </Button>
+          )}
+          {isHR && (
+            <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={() => setAuditDialog(true)}>
+              <History className="w-3.5 h-3.5" /> Audit Log
+              {auditLog.length > 0 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-mono-data">{auditLog.length}</span>}
+            </Button>
+          )}
+          {isHR && (
+            <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={handleSync}>
+              <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing..." : "Sync Now"}
+            </Button>
+          )}
           {isHR && (
             <Dialog open={configDialog} onOpenChange={setConfigDialog}>
               <DialogTrigger asChild>
