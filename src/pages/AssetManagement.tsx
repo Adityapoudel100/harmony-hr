@@ -307,6 +307,13 @@ export default function AssetManagement() {
           <h1 className="text-lg font-semibold">Asset Management</h1>
           <p className="text-sm text-muted-foreground">Track and manage company assets</p>
         </div>
+        <div className="flex items-center gap-2">
+        {isHR && (
+          <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={() => setInboxDialog(true)}>
+            <Inbox className="w-3.5 h-3.5" /> Take-home Requests
+            {pendingRequests.length > 0 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-warning/15 text-warning font-mono-data">{pendingRequests.length}</span>}
+          </Button>
+        )}
         {isHR && (
           <Dialog open={addDialog} onOpenChange={setAddDialog}>
             <DialogTrigger asChild>
