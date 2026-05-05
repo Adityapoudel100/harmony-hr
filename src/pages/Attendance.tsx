@@ -154,6 +154,24 @@ export default function Attendance() {
   const [monthlyData] = useState<MonthlyRow[]>(initialMonthly);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [auditDialog, setAuditDialog] = useState(false);
+  const [requests, setRequests] = useState<CorrectionRequest[]>([]);
+  const [requestDialog, setRequestDialog] = useState(false);
+  const [inboxDialog, setInboxDialog] = useState(false);
+  const [reqDraft, setReqDraft] = useState({
+    date: new Date().toISOString().slice(0, 10),
+    type: "check-in" as CorrectionRequest["type"],
+    requestedCheckIn: "",
+    requestedCheckOut: "",
+    reason: "",
+  });
+
+  // Identify which row belongs to the logged-in employee (demo: match by name, fallback EMP-1001)
+  const myEmpId = useMemo(() => {
+    if (!isEmployee) return null;
+    const match = initialDaily.find(r => r.name.toLowerCase() === (user?.name || "").toLowerCase());
+    return match?.id ?? "EMP-1001";
+  }, [isEmployee, user]);
+  const me = useMemo(() => initialDaily.find(r => r.id === myEmpId), [myEmpId]);
 
   // Edit dialog state
   const [editRow, setEditRow] = useState<DailyRow | null>(null);
