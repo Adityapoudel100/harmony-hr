@@ -627,14 +627,18 @@ export default function Attendance() {
                 <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>{["2023", "2024", "2025"].map(y => <SelectItem key={y} value={y} className="text-xs">{y}</SelectItem>)}</SelectContent>
               </Select>
-              <div className="h-6 w-px bg-border" />
-              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-                <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="All employees" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="text-xs">All Employees</SelectItem>
-                  {monthlyData.map(e => <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {!isEmployee && (
+                <>
+                  <div className="h-6 w-px bg-border" />
+                  <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                    <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="All employees" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="text-xs">All Employees</SelectItem>
+                      {monthlyData.map(e => <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
               <div className="ml-auto flex items-center gap-2">
                 <Button variant="outline" size="sm" className="gap-1.5 press-effect" onClick={handleExport}>
                   <FileSpreadsheet className="w-3.5 h-3.5" /> Export CSV
