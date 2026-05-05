@@ -57,8 +57,26 @@ const initialAssets: Asset[] = [
   { id: "AST-010", name: "Seagate 2TB", type: "Hard Drive", serialNumber: "SG-2023-0015", assignedTo: "Dipesh Karki", assignedToId: "EMP-1007", department: "Engineering", purchaseDate: "2023-07-12", status: "Assigned", condition: "Good" },
 ];
 
+const TAKEHOME_KEY = "asset_takehome_requests_v1";
+
+interface TakeHomeRequest {
+  id: string;
+  assetId: string;
+  assetName: string;
+  empId: string;
+  empName: string;
+  reason: string;
+  startDate: string;
+  endDate: string;
+  status: "Pending" | "Approved" | "Rejected";
+  submittedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+}
+
 export default function AssetManagement() {
-  const { isHR } = useRole();
+  const { isHR, isEmployee } = useRole();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [assets, setAssets] = useState<Asset[]>(initialAssets);
@@ -69,6 +87,58 @@ export default function AssetManagement() {
   const [showFilters, setShowFilters] = useState(false);
   const [newAsset, setNewAsset] = useState({ name: "", type: "", serialNumber: "", purchaseDate: "", condition: "Good" as Condition });
   const [assignTo, setAssignTo] = useState("");
+
+  const [takeHomeRequests, setTakeHomeRequests] = useState<TakeHomeRequest[]>([]);
+  const [requestDialog, setRequestDialog] = useState<Asset | null>(null);
+  const [inboxDialog, setInboxDialog] = useState(false);
+  const [reqDraft, setReqDraft] = useState({ reason: "", startDate: new Date().toISOString().slice(0, 10), endDate: "" });
+
+  const myEmpId = useMemo(() => {
+    if (!isEmployee) return null;
+    const match = employees.find(e => e.name.toLowerCase() === (user?.name || "").toLowerCase());
+    return match?.id ?? "EMP-1001";
+  }, [isEmployee, user]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(TAKEHOME_KEY);
+    if (stored) { try { setTakeHomeRequests(JSON.parse(stored)); } catch { /* ignore */ } }
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(TAKEHOME_KEY, JSON.stringify(takeHomeRequests));
+  }, [takeHomeRequests]);
+
+  const myAssignedAssets = useMemo(() => assets.filter(a => a.assignedToId === myEmpId), [assets, myEmpId]);
+  const myRequests = useMemo(() => takeHomeRequests.filter(r => r.empId === myEmpId), [takeHomeRequests, myEmpId]);
+  const pendingRequests = takeHomeRequests.filter(r => r.status === "Pending");
+
+  const submitTakeHomeRequest = () => {
+    if (!requestDialog) return;
+    if (!reqDraft.reason.trim() || !reqDraft.startDate || !reqDraft.endDate) {
+      toast({ title: "All fields required", variant: "destructive" });
+      return;
+    }
+    const req: TakeHomeRequest = {
+      id: `THR-${Date.now()}`,
+      assetId: requestDialog.id,
+      assetName: requestDialog.name,
+      empId: myEmpId || "EMP-?",
+      empName: user?.name || "Employee",
+      reason: reqDraft.reason.trim(),
+      startDate: reqDraft.startDate,
+      endDate: reqDraft.endDate,
+      status: "Pending",
+      submittedAt: new Date().toISOString(),
+    };
+    setTakeHomeRequests(prev => [req, ...prev]);
+    setRequestDialog(null);
+    setReqDraft({ reason: "", startDate: new Date().toISOString().slice(0, 10), endDate: "" });
+    toast({ title: "Request submitted", description: "HR/Admin will review your take-home request." });
+  };
+
+  const reviewTakeHomeRequest = (id: string, decision: "Approved" | "Rejected") => {
+    setTakeHomeRequests(prev => prev.map(r => r.id === id ? { ...r, status: decision, reviewedBy: user?.name || "HR Admin", reviewedAt: new Date().toISOString() } : r));
+    toast({ title: `Request ${decision.toLowerCase()}` });
+  };
 
   const filtered = assets.filter(a => {
     const matchSearch = a.name.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase()) || a.serialNumber.toLowerCase().includes(search.toLowerCase()) || (a.assignedTo && a.assignedTo.toLowerCase().includes(search.toLowerCase()));
