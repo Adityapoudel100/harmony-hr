@@ -85,6 +85,7 @@ const employeeNav = [
       { to: "/ess", icon: FileText, label: "My Profile" },
       { to: "/attendance", icon: Clock, label: "My Attendance" },
       { to: "/leave", icon: CalendarDays, label: "Leave" },
+      { to: "/assets", icon: Package, label: "My Assets" },
       { to: "/payroll", icon: DollarSign, label: "My Payslips" },
     ],
   },
