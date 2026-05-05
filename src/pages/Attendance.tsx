@@ -70,6 +70,22 @@ interface AuditEntry {
   id: string; empId: string; date: string; field: string;
   oldValue: string; newValue: string; editor: string; reason: string; at: string;
 }
+interface CorrectionRequest {
+  id: string;
+  empId: string;
+  empName: string;
+  date: string;            // ISO date
+  type: "check-in" | "check-out" | "both";
+  requestedCheckIn?: string;
+  requestedCheckOut?: string;
+  reason: string;
+  status: "Pending" | "Approved" | "Rejected";
+  submittedAt: string;
+  reviewedBy?: string;
+  reviewNote?: string;
+  reviewedAt?: string;
+}
+const REQUESTS_KEY = "attendance_correction_requests_v1";
 
 // ───── Mock Data ─────
 const initialDaily: DailyRow[] = [
