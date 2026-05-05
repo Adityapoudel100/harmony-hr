@@ -741,6 +741,42 @@ export default function Attendance() {
               ))}
             </div>
           </TabsContent>
+
+          {/* MY REQUESTS TAB (employee) */}
+          {isEmployee && (
+            <TabsContent value="requests" className="space-y-4">
+              <div className="glass-card overflow-hidden">
+                <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+                  <div>
+                    <h2 className="text-sm font-semibold">My Attendance Correction Requests</h2>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Submit a request when a check-in or check-out is missed. HR/Admin will review and approve.</p>
+                  </div>
+                  <Button size="sm" className="gap-1.5 press-effect" onClick={() => setRequestDialog(true)}>
+                    <Plus className="w-3.5 h-3.5" /> New Request
+                  </Button>
+                </div>
+                {myRequests.length === 0 ? (
+                  <div className="text-center text-sm text-muted-foreground py-10">No requests yet.</div>
+                ) : (
+                  <table className="nexus-table">
+                    <thead><tr><th>Date</th><th>Type</th><th>Requested Times</th><th>Reason</th><th>Status</th><th>Reviewed By</th></tr></thead>
+                    <tbody>
+                      {myRequests.map(r => (
+                        <tr key={r.id}>
+                          <td className="font-mono-data text-xs">{r.date}</td>
+                          <td className="text-xs capitalize">{r.type}</td>
+                          <td className="font-mono-data text-xs">{r.requestedCheckIn ?? "—"} / {r.requestedCheckOut ?? "—"}</td>
+                          <td className="text-xs text-muted-foreground max-w-[260px] truncate" title={r.reason}>{r.reason}</td>
+                          <td><span className={`status-pill ${r.status === "Approved" ? "status-active" : r.status === "Rejected" ? "status-resigned" : "status-pending"}`}>{r.status}</span></td>
+                          <td className="text-xs text-muted-foreground">{r.reviewedBy ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </motion.div>
 
