@@ -529,9 +529,10 @@ export default function Attendance() {
       <motion.div variants={item}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
           <TabsList>
-            <TabsTrigger value="daily" className="gap-1.5"><CalendarIcon className="w-3.5 h-3.5" /> Daily Log</TabsTrigger>
-            <TabsTrigger value="monthly" className="gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> Monthly Report</TabsTrigger>
-            <TabsTrigger value="devices" className="gap-1.5"><Wifi className="w-3.5 h-3.5" /> Devices</TabsTrigger>
+            <TabsTrigger value="daily" className="gap-1.5"><CalendarIcon className="w-3.5 h-3.5" /> {isEmployee ? "My Daily Log" : "Daily Log"}</TabsTrigger>
+            <TabsTrigger value="monthly" className="gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> {isEmployee ? "My Monthly Report" : "Monthly Report"}</TabsTrigger>
+            {isEmployee && <TabsTrigger value="requests" className="gap-1.5"><Send className="w-3.5 h-3.5" /> My Requests{myRequests.length > 0 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-mono-data">{myRequests.length}</span>}</TabsTrigger>}
+            {!isEmployee && <TabsTrigger value="devices" className="gap-1.5"><Wifi className="w-3.5 h-3.5" /> Devices</TabsTrigger>}
           </TabsList>
 
           {/* DAILY TAB */}
