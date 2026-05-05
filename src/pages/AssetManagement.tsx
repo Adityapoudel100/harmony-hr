@@ -347,6 +347,7 @@ export default function AssetManagement() {
             </DialogContent>
           </Dialog>
         )}
+        </div>
       </motion.div>
 
       {/* Summary Cards */}
