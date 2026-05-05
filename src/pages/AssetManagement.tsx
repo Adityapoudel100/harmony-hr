@@ -440,6 +440,58 @@ export default function AssetManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* HR Take-home Requests Inbox */}
+      <Dialog open={inboxDialog} onOpenChange={setInboxDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Asset Take-home Requests</DialogTitle>
+            <DialogDescription>Approve or reject employee requests to take assigned assets home for remote access.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[65vh] overflow-y-auto">
+            {takeHomeRequests.length === 0 ? (
+              <div className="text-center text-sm text-muted-foreground py-10">No requests submitted yet.</div>
+            ) : (
+              <table className="nexus-table">
+                <thead>
+                  <tr>
+                    <th>Submitted</th><th>Employee</th><th>Asset</th><th>Period</th><th>Reason</th><th>Status</th><th className="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {takeHomeRequests.map(r => (
+                    <tr key={r.id}>
+                      <td className="text-[11px] text-muted-foreground font-mono-data">{new Date(r.submittedAt).toLocaleString()}</td>
+                      <td className="text-xs"><div className="font-medium">{r.empName}</div><div className="text-[11px] text-muted-foreground font-mono-data">{r.empId}</div></td>
+                      <td className="text-xs"><div className="font-medium">{r.assetName}</div><div className="text-[11px] text-muted-foreground font-mono-data">{r.assetId}</div></td>
+                      <td className="font-mono-data text-xs">{r.startDate} → {r.endDate}</td>
+                      <td className="text-xs text-muted-foreground max-w-[220px]" title={r.reason}>{r.reason}</td>
+                      <td><span className={`status-pill ${r.status === "Approved" ? "status-active" : r.status === "Rejected" ? "status-resigned" : "status-pending"}`}>{r.status}</span></td>
+                      <td className="text-right">
+                        {r.status === "Pending" ? (
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="outline" className="h-7 px-2 gap-1" onClick={() => reviewTakeHomeRequest(r.id, "Approved")}>
+                              <Check className="w-3 h-3 text-success" /><span className="text-xs">Approve</span>
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 px-2 gap-1" onClick={() => reviewTakeHomeRequest(r.id, "Rejected")}>
+                              <X className="w-3 h-3 text-destructive" /><span className="text-xs">Reject</span>
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">{r.reviewedBy}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setInboxDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
