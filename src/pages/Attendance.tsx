@@ -581,7 +581,7 @@ export default function Attendance() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dailyLog.map(row => (
+                  {(isEmployee ? dailyLog.filter(r => r.id === myEmpId) : dailyLog).map(row => (
                     <tr key={row.id}>
                       <td className="font-mono-data text-xs text-muted-foreground">{row.id}</td>
                       <td className="text-sm font-medium">
@@ -603,6 +603,9 @@ export default function Attendance() {
                       )}
                     </tr>
                   ))}
+                  {isEmployee && !dailyLog.find(r => r.id === myEmpId) && (
+                    <tr><td colSpan={8} className="text-center text-xs text-muted-foreground py-6">No attendance record for today. If you forgot to punch, click <span className="font-semibold">Request Correction</span>.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
