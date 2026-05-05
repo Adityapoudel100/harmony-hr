@@ -881,6 +881,113 @@ export default function Attendance() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ───── Employee: New Correction Request Dialog ───── */}
+      <Dialog open={requestDialog} onOpenChange={setRequestDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request Attendance Correction</DialogTitle>
+            <DialogDescription>Submit a request to HR/Admin for a missed check-in or check-out.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                <Input type="date" value={reqDraft.date} onChange={e => setReqDraft(d => ({ ...d, date: e.target.value }))} className="h-9 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Request Type</label>
+                <Select value={reqDraft.type} onValueChange={(v: CorrectionRequest["type"]) => setReqDraft(d => ({ ...d, type: v }))}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="check-in">Missed Check-in</SelectItem>
+                    <SelectItem value="check-out">Missed Check-out</SelectItem>
+                    <SelectItem value="both">Both</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {reqDraft.type !== "check-out" && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Check-in time</label>
+                  <Input type="time" value={reqDraft.requestedCheckIn} onChange={e => setReqDraft(d => ({ ...d, requestedCheckIn: e.target.value }))} className="h-9 font-mono-data" />
+                </div>
+              )}
+              {reqDraft.type !== "check-in" && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Check-out time</label>
+                  <Input type="time" value={reqDraft.requestedCheckOut} onChange={e => setReqDraft(d => ({ ...d, requestedCheckOut: e.target.value }))} className="h-9 font-mono-data" />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Reason <span className="text-destructive">*</span></label>
+              <Textarea rows={3} value={reqDraft.reason} onChange={e => setReqDraft(d => ({ ...d, reason: e.target.value }))} placeholder="e.g., Forgot to punch out, device offline, came directly from client site." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setRequestDialog(false)}>Cancel</Button>
+            <Button size="sm" className="gap-1.5" onClick={submitCorrectionRequest}>
+              <Send className="w-3.5 h-3.5" /> Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ───── HR: Requests Inbox Dialog ───── */}
+      <Dialog open={inboxDialog} onOpenChange={setInboxDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Attendance Correction Requests</DialogTitle>
+            <DialogDescription>Approve or reject employee-submitted check-in / check-out corrections.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[65vh] overflow-y-auto">
+            {requests.length === 0 ? (
+              <div className="text-center text-sm text-muted-foreground py-10">No requests submitted yet.</div>
+            ) : (
+              <table className="nexus-table">
+                <thead>
+                  <tr>
+                    <th>Submitted</th><th>Employee</th><th>Date</th><th>Type</th>
+                    <th>Requested</th><th>Reason</th><th>Status</th><th className="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map(r => (
+                    <tr key={r.id}>
+                      <td className="text-[11px] text-muted-foreground font-mono-data">{new Date(r.submittedAt).toLocaleString()}</td>
+                      <td className="text-xs"><div className="font-medium">{r.empName}</div><div className="text-[11px] text-muted-foreground font-mono-data">{r.empId}</div></td>
+                      <td className="font-mono-data text-xs">{r.date}</td>
+                      <td className="text-xs capitalize">{r.type}</td>
+                      <td className="font-mono-data text-xs">{r.requestedCheckIn ?? "—"} / {r.requestedCheckOut ?? "—"}</td>
+                      <td className="text-xs text-muted-foreground max-w-[200px]" title={r.reason}>{r.reason}</td>
+                      <td><span className={`status-pill ${r.status === "Approved" ? "status-active" : r.status === "Rejected" ? "status-resigned" : "status-pending"}`}>{r.status}</span></td>
+                      <td className="text-right">
+                        {r.status === "Pending" ? (
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="outline" className="h-7 px-2 gap-1" onClick={() => reviewRequest(r.id, "Approved")}>
+                              <Check className="w-3 h-3 text-success" /><span className="text-xs">Approve</span>
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 px-2 gap-1" onClick={() => reviewRequest(r.id, "Rejected")}>
+                              <X className="w-3 h-3 text-destructive" /><span className="text-xs">Reject</span>
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">{r.reviewedBy}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setInboxDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
