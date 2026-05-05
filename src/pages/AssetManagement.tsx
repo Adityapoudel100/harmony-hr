@@ -185,6 +185,121 @@ export default function AssetManagement() {
     toast({ title: `Status changed to ${status}` });
   };
 
+  // ───── Employee view ─────
+  if (isEmployee) {
+    return (
+      <motion.div variants={container} initial="hidden" animate="show" className="space-y-4">
+        <motion.div variants={item} className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold">My Assets</h1>
+            <p className="text-sm text-muted-foreground">Devices assigned to you. Request take-home for remote access.</p>
+          </div>
+        </motion.div>
+
+        <motion.div variants={item} className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-border">
+            <h2 className="text-sm font-semibold">Assigned Devices · <span className="font-mono-data text-muted-foreground">{myAssignedAssets.length}</span></h2>
+          </div>
+          {myAssignedAssets.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground py-10">No devices assigned to you yet.</div>
+          ) : (
+            <table className="nexus-table">
+              <thead><tr><th>Asset ID</th><th>Asset</th><th>Serial Number</th><th>Condition</th><th>Status</th><th className="text-right">Action</th></tr></thead>
+              <tbody>
+                {myAssignedAssets.map(asset => {
+                  const Icon = typeIcons[asset.type] || Package;
+                  const existing = takeHomeRequests.find(r => r.assetId === asset.id && r.empId === myEmpId && r.status === "Pending");
+                  const approved = takeHomeRequests.find(r => r.assetId === asset.id && r.empId === myEmpId && r.status === "Approved");
+                  return (
+                    <tr key={asset.id}>
+                      <td className="font-mono-data text-xs text-muted-foreground">{asset.id}</td>
+                      <td>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center shrink-0"><Icon className="w-3.5 h-3.5 text-muted-foreground" /></div>
+                          <div><p className="text-sm font-medium leading-none">{asset.name}</p><p className="text-xs text-muted-foreground mt-0.5">{asset.type}</p></div>
+                        </div>
+                      </td>
+                      <td className="font-mono-data text-xs text-muted-foreground">{asset.serialNumber}</td>
+                      <td><span className={`status-pill ${conditionClass[asset.condition]}`}>{asset.condition}</span></td>
+                      <td><span className={`status-pill ${statusClass[asset.status]}`}>{asset.status}</span></td>
+                      <td className="text-right">
+                        {approved ? (
+                          <span className="status-pill status-active gap-1 inline-flex items-center"><Home className="w-3 h-3" /> Take-home approved</span>
+                        ) : existing ? (
+                          <span className="status-pill status-pending">Request pending</span>
+                        ) : (
+                          <Button size="sm" variant="outline" className="h-7 px-2 gap-1" onClick={() => { setRequestDialog(asset); setReqDraft({ reason: "", startDate: new Date().toISOString().slice(0, 10), endDate: "" }); }}>
+                            <Home className="w-3 h-3" /><span className="text-xs">Request Take-home</span>
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </motion.div>
+
+        {/* My Requests */}
+        <motion.div variants={item} className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-border">
+            <h2 className="text-sm font-semibold">My Take-home Requests</h2>
+          </div>
+          {myRequests.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground py-10">No requests submitted yet.</div>
+          ) : (
+            <table className="nexus-table">
+              <thead><tr><th>Submitted</th><th>Asset</th><th>Period</th><th>Reason</th><th>Status</th><th>Reviewed By</th></tr></thead>
+              <tbody>
+                {myRequests.map(r => (
+                  <tr key={r.id}>
+                    <td className="text-[11px] text-muted-foreground font-mono-data">{new Date(r.submittedAt).toLocaleString()}</td>
+                    <td className="text-xs"><div className="font-medium">{r.assetName}</div><div className="text-[11px] text-muted-foreground font-mono-data">{r.assetId}</div></td>
+                    <td className="font-mono-data text-xs">{r.startDate} → {r.endDate}</td>
+                    <td className="text-xs text-muted-foreground max-w-[260px] truncate" title={r.reason}>{r.reason}</td>
+                    <td><span className={`status-pill ${r.status === "Approved" ? "status-active" : r.status === "Rejected" ? "status-resigned" : "status-pending"}`}>{r.status}</span></td>
+                    <td className="text-xs text-muted-foreground">{r.reviewedBy ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </motion.div>
+
+        {/* Request dialog */}
+        <Dialog open={!!requestDialog} onOpenChange={(o) => !o && setRequestDialog(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Request to Take Asset Home</DialogTitle>
+              <DialogDescription>{requestDialog && <span>{requestDialog.name} · <span className="font-mono-data">{requestDialog.id}</span></span>}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 pt-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Start Date</label>
+                  <Input type="date" value={reqDraft.startDate} onChange={e => setReqDraft(d => ({ ...d, startDate: e.target.value }))} className="h-9 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">End Date</label>
+                  <Input type="date" value={reqDraft.endDate} onChange={e => setReqDraft(d => ({ ...d, endDate: e.target.value }))} className="h-9 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Reason <span className="text-destructive">*</span></label>
+                <Textarea rows={3} value={reqDraft.reason} onChange={e => setReqDraft(d => ({ ...d, reason: e.target.value }))} placeholder="e.g., Remote work for project deadline, on-call support." />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => setRequestDialog(null)}>Cancel</Button>
+              <Button size="sm" className="gap-1.5" onClick={submitTakeHomeRequest}><Send className="w-3.5 h-3.5" /> Submit</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-4">
       <motion.div variants={item} className="flex items-center justify-between">
