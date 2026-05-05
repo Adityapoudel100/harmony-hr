@@ -139,7 +139,8 @@ function diffHours(inT: string, outT: string): string {
 }
 
 export default function Attendance() {
-  const { isHR } = useRole();
+  const { isHR, isEmployee } = useRole();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [syncing, setSyncing] = useState(false);
   const [configDialog, setConfigDialog] = useState(false);
