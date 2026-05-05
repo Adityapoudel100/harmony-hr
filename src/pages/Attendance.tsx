@@ -383,8 +383,9 @@ export default function Attendance() {
   }), [dailyLog]);
 
   const filteredMonthly = useMemo(() => {
+    if (isEmployee) return monthlyData.filter(r => r.id === myEmpId);
     return selectedEmployee === "all" ? monthlyData : monthlyData.filter(r => r.id === selectedEmployee);
-  }, [selectedEmployee, monthlyData]);
+  }, [selectedEmployee, monthlyData, isEmployee, myEmpId]);
 
   const monthlyTotals = useMemo(() => ({
     totalPresent: filteredMonthly.reduce((s, r) => s + r.present, 0),
