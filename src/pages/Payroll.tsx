@@ -319,6 +319,9 @@ export default function Payroll() {
             <TabsTrigger value="taxslab" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Settings2 className="w-3.5 h-3.5" />Tax Slab
             </TabsTrigger>
+            <TabsTrigger value="formulas" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <Calculator className="w-3.5 h-3.5" />Formula Builder
+            </TabsTrigger>
           </TabsList>
 
           {/* BULK PAYROLL */}
@@ -634,6 +637,11 @@ export default function Payroll() {
                 </div>
               </div>
             ))}
+          </TabsContent>
+
+          {/* CUSTOM FORMULA BUILDER */}
+          <TabsContent value="formulas" className="space-y-4 mt-4">
+            <FormulaBuilder sampleEmployees={employees} fyKey={fyKey} workingDays={workingDays} />
           </TabsContent>
         </Tabs>
       </motion.div>
