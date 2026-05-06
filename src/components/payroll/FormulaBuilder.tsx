@@ -100,12 +100,9 @@ export default function FormulaBuilder({ sampleEmployees, fyKey, workingDays }: 
       return;
     }
     const r = calculatePayroll(emp, fyKey, workingDays);
-    const out = evaluateFormula(draftFormula, buildScope(r, workingDays));
-    if (out.ok === true) {
-      setTestResult({ ok: true, value: out.value });
-    } else {
-      setTestResult({ ok: false, error: out.error });
-    }
+    const out: any = evaluateFormula(draftFormula, buildScope(r, workingDays));
+    if (out.ok) setTestResult({ ok: true, value: out.value });
+    else setTestResult({ ok: false, error: out.error });
   };
 
   const handleAdd = () => {
