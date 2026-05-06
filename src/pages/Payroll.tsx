@@ -15,6 +15,7 @@ import {
   calculatePayroll, fmt, NEPALI_MONTHS, IRD_DATA,
   type PayrollEmployee, type PayrollResult, type TaxpayerType, type Gender, type FYData, type TaxSlab
 } from "@/lib/payroll-engine";
+import FormulaBuilder from "@/components/payroll/FormulaBuilder";
 
 const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
@@ -317,6 +318,9 @@ export default function Payroll() {
             </TabsTrigger>
             <TabsTrigger value="taxslab" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Settings2 className="w-3.5 h-3.5" />Tax Slab
+            </TabsTrigger>
+            <TabsTrigger value="formulas" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <Calculator className="w-3.5 h-3.5" />Formula Builder
             </TabsTrigger>
           </TabsList>
 
@@ -633,6 +637,11 @@ export default function Payroll() {
                 </div>
               </div>
             ))}
+          </TabsContent>
+
+          {/* CUSTOM FORMULA BUILDER */}
+          <TabsContent value="formulas" className="space-y-4 mt-4">
+            <FormulaBuilder sampleEmployees={employees} fyKey={fyKey} workingDays={workingDays} />
           </TabsContent>
         </Tabs>
       </motion.div>
