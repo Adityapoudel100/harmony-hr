@@ -79,6 +79,17 @@ const statusClass: Record<string, string> = {
 
 const employeeNames = ["Aarav Bhandari", "Priya Sharma", "Raj Thapa", "Sita Magar", "Dipesh Karki", "Bikash Gurung", "Anita KC"];
 
+interface LeaveOverride {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  leaveType: string;
+  customQuota: number;
+  reason: string;
+  updatedOn: string;
+  updatedBy: string;
+}
+
 export default function LeaveManagement() {
   const { isHR } = useRole();
   const { toast } = useToast();
