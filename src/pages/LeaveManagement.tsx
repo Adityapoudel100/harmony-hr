@@ -683,9 +683,15 @@ export default function LeaveManagement() {
                             <td className="text-xs text-muted-foreground">{employee.department}</td>
                             {types.map(t => (
                               <td key={t.type} className="text-center">
-                                <div className="inline-flex flex-col items-center">
-                                  <span className="font-mono-data text-xs"><span className="font-semibold">{t.remaining}</span><span className="text-muted-foreground">/{t.quota}</span></span>
-                                  {t.customized && <span className="text-[9px] mt-0.5 px-1 rounded bg-primary/10 text-primary">custom</span>}
+                                <div className="inline-flex flex-col items-center" title={t.proRata ? `Accrued ${t.accrued} of ${t.quota} (pro-rata)` : `Quota ${t.quota}`}>
+                                  <span className="font-mono-data text-xs">
+                                    <span className={`font-semibold ${t.remaining < 0 ? "text-destructive" : ""}`}>{t.remaining}</span>
+                                    <span className="text-muted-foreground">/{t.proRata ? t.accrued : t.quota}</span>
+                                  </span>
+                                  <div className="flex gap-1 mt-0.5">
+                                    {t.customized && <span className="text-[9px] px-1 rounded bg-primary/10 text-primary">custom</span>}
+                                    {t.advance > 0 && <span className="text-[9px] px-1 rounded bg-destructive/10 text-destructive">advance {t.advance}d</span>}
+                                  </div>
                                 </div>
                               </td>
                             ))}
