@@ -118,6 +118,13 @@ export default function LeaveManagement() {
   const [newLeave, setNewLeave] = useState({ employee: "", type: "", from: "", to: "", reason: "" });
   const [applyForEmployee, setApplyForEmployee] = useState(false);
 
+  // Custom employee leave overrides
+  const [overrides, setOverrides] = useState<LeaveOverride[]>([]);
+  const [overrideDialog, setOverrideDialog] = useState(false);
+  const [overrideSort, setOverrideSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "employeeName", dir: "asc" });
+  const [newOverride, setNewOverride] = useState({ employeeId: "", leaveType: "", customQuota: 0, reason: "" });
+  const [editOverride, setEditOverride] = useState<LeaveOverride | null>(null);
+
   const leaveTypes = policies.filter(p => p.active).map(p => p.name);
 
   const handleApplyLeave = () => {
