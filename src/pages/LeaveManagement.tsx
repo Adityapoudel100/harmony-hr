@@ -805,6 +805,31 @@ export default function LeaveManagement() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Override Dialog */}
+      <Dialog open={!!editOverride} onOpenChange={() => setEditOverride(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Edit Custom Leave</DialogTitle></DialogHeader>
+          {editOverride && (
+            <div className="space-y-3 pt-2">
+              <div><label className="text-xs text-muted-foreground mb-1 block">Employee</label><Input value={editOverride.employeeName} disabled className="h-9 text-sm" /></div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Leave Type</label>
+                <Select value={editOverride.leaveType} onValueChange={v => setEditOverride({ ...editOverride, leaveType: v })}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>{leaveTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><label className="text-xs text-muted-foreground mb-1 block">Custom Quota (days)</label><Input type="number" min={0} value={editOverride.customQuota} onChange={e => setEditOverride({ ...editOverride, customQuota: +e.target.value })} className="h-9 text-sm font-mono-data" /></div>
+              <div><label className="text-xs text-muted-foreground mb-1 block">Reason *</label><Textarea value={editOverride.reason} onChange={e => setEditOverride({ ...editOverride, reason: e.target.value })} className="text-sm min-h-[80px]" /></div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setEditOverride(null)}>Cancel</Button>
+                <Button size="sm" onClick={handleSaveOverride}>Save Changes</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
