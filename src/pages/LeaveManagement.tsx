@@ -680,7 +680,7 @@ export default function LeaveManagement() {
                         {employeeBalances.map(({ employee, types }) => (
                           <tr key={employee.id}>
                             <td className="text-sm font-medium">{employee.name}</td>
-                            <td className="text-xs text-muted-foreground">{employee.department}</td>
+                            
                             {types.map(t => (
                               <td key={t.type} className="text-center">
                                 <div className="inline-flex flex-col items-center" title={t.proRata ? `Accrued ${t.accrued} of ${t.quota} (pro-rata)` : `Quota ${t.quota}`}>
