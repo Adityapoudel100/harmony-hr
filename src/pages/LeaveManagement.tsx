@@ -568,6 +568,123 @@ export default function LeaveManagement() {
                   </div>
                 </TabsContent>
               )}
+
+              {/* EMPLOYEE BALANCES (HR only) */}
+              {isHR && (
+                <TabsContent value="balances" className="space-y-4 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold">Employee Leave Balances</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">Customize leave quotas per employee with reason. Defaults come from active policies.</p>
+                    </div>
+                    <Dialog open={overrideDialog} onOpenChange={setOverrideDialog}>
+                      <DialogTrigger asChild><Button size="sm" className="gap-1.5 press-effect"><Plus className="w-3.5 h-3.5" />Customize Leave</Button></DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader><DialogTitle>Customize Employee Leave</DialogTitle></DialogHeader>
+                        <div className="space-y-3 pt-2">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Employee *</label>
+                            <Select value={newOverride.employeeId} onValueChange={v => setNewOverride({ ...newOverride, employeeId: v })}>
+                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select employee" /></SelectTrigger>
+                              <SelectContent>{EMPLOYEES.map(e => <SelectItem key={e.id} value={e.id}>{e.name} — {e.department}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Leave Type *</label>
+                            <Select value={newOverride.leaveType} onValueChange={v => setNewOverride({ ...newOverride, leaveType: v })}>
+                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select leave type" /></SelectTrigger>
+                              <SelectContent>{leaveTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                          <div><label className="text-xs text-muted-foreground mb-1 block">Custom Quota (days)</label><Input type="number" min={0} value={newOverride.customQuota} onChange={e => setNewOverride({ ...newOverride, customQuota: +e.target.value })} className="h-9 text-sm font-mono-data" /></div>
+                          <div><label className="text-xs text-muted-foreground mb-1 block">Reason *</label><Textarea value={newOverride.reason} onChange={e => setNewOverride({ ...newOverride, reason: e.target.value })} placeholder="Why this customization is needed..." className="text-sm min-h-[80px]" /></div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setOverrideDialog(false)}>Cancel</Button>
+                            <Button size="sm" onClick={handleSaveOverride}>Save Customization</Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  {/* Customizations table */}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <h4 className="text-sm font-medium">Active Customizations</h4>
+                      <span className="text-xs text-muted-foreground">{overrides.length} custom rule(s)</span>
+                    </div>
+                    {overrides.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-muted-foreground">No custom leave rules yet. Click "Customize Leave" to override an employee's quota.</div>
+                    ) : (
+                      <table className="nexus-table">
+                        <thead>
+                          <tr>
+                            {[
+                              { k: "employeeName", l: "Employee" },
+                              { k: "leaveType", l: "Leave Type" },
+                              { k: "customQuota", l: "Custom Quota" },
+                              { k: "reason", l: "Reason" },
+                              { k: "updatedOn", l: "Updated" },
+                            ].map(c => (
+                              <th key={c.k} className="cursor-pointer select-none" onClick={() => sortOverride(c.k)}>
+                                <span className="inline-flex items-center gap-1">{c.l}{overrideSort.key === c.k && <span className="text-[10px]">{overrideSort.dir === "asc" ? "▲" : "▼"}</span>}</span>
+                              </th>
+                            ))}
+                            <th className="w-24">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedOverrides.map(o => (
+                            <tr key={o.id}>
+                              <td className="text-sm font-medium">{o.employeeName}</td>
+                              <td className="text-sm text-muted-foreground">{o.leaveType}</td>
+                              <td className="font-mono-data text-xs">{o.customQuota} days</td>
+                              <td className="text-xs text-muted-foreground max-w-xs truncate" title={o.reason}>{o.reason}</td>
+                              <td className="font-mono-data text-xs text-muted-foreground">{o.updatedOn}</td>
+                              <td>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" className="h-6 px-1.5" onClick={() => setEditOverride({ ...o })}><Edit2 className="w-3 h-3" /></Button>
+                                  <Button variant="ghost" size="sm" className="h-6 px-1.5" onClick={() => handleDeleteOverride(o.id)}><Trash2 className="w-3 h-3 text-destructive" /></Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+
+                  {/* All employees balances */}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border"><h4 className="text-sm font-medium">All Employee Leave Balances</h4></div>
+                    <table className="nexus-table">
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Department</th>
+                          {activePolicies.map(p => <th key={p.id} className="text-center">{p.name}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employeeBalances.map(({ employee, types }) => (
+                          <tr key={employee.id}>
+                            <td className="text-sm font-medium">{employee.name}</td>
+                            <td className="text-xs text-muted-foreground">{employee.department}</td>
+                            {types.map(t => (
+                              <td key={t.type} className="text-center">
+                                <div className="inline-flex flex-col items-center">
+                                  <span className="font-mono-data text-xs"><span className="font-semibold">{t.remaining}</span><span className="text-muted-foreground">/{t.quota}</span></span>
+                                  {t.customized && <span className="text-[9px] mt-0.5 px-1 rounded bg-primary/10 text-primary">custom</span>}
+                                </div>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </TabsContent>
+              )}
             </Tabs>
           </motion.div>
         </>
