@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CalendarDays, Plus, ArrowLeft, Clock, User, FileText, Edit2, Trash2, Settings2, Calendar } from "lucide-react";
+import { CalendarDays, Plus, ArrowLeft, Clock, User, FileText, Edit2, Trash2, Settings2, Calendar, Users } from "lucide-react";
+import { EMPLOYEES } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -78,6 +79,17 @@ const statusClass: Record<string, string> = {
 
 const employeeNames = ["Aarav Bhandari", "Priya Sharma", "Raj Thapa", "Sita Magar", "Dipesh Karki", "Bikash Gurung", "Anita KC"];
 
+interface LeaveOverride {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  leaveType: string;
+  customQuota: number;
+  reason: string;
+  updatedOn: string;
+  updatedBy: string;
+}
+
 export default function LeaveManagement() {
   const { isHR } = useRole();
   const { toast } = useToast();
@@ -105,6 +117,13 @@ export default function LeaveManagement() {
   // Apply leave form
   const [newLeave, setNewLeave] = useState({ employee: "", type: "", from: "", to: "", reason: "" });
   const [applyForEmployee, setApplyForEmployee] = useState(false);
+
+  // Custom employee leave overrides
+  const [overrides, setOverrides] = useState<LeaveOverride[]>([]);
+  const [overrideDialog, setOverrideDialog] = useState(false);
+  const [overrideSort, setOverrideSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "employeeName", dir: "asc" });
+  const [newOverride, setNewOverride] = useState({ employeeId: "", leaveType: "", customQuota: 0, reason: "" });
+  const [editOverride, setEditOverride] = useState<LeaveOverride | null>(null);
 
   const leaveTypes = policies.filter(p => p.active).map(p => p.name);
 
@@ -205,6 +224,58 @@ export default function LeaveManagement() {
     setPolicies(prev => prev.filter(p => p.id !== id));
     toast({ title: "Leave policy deleted" });
   };
+
+  // Override handlers
+  const handleSaveOverride = () => {
+    if (editOverride) {
+      setOverrides(prev => prev.map(o => o.id === editOverride.id ? { ...editOverride, updatedOn: new Date().toISOString().split("T")[0] } : o));
+      setEditOverride(null);
+      toast({ title: "Custom leave updated" });
+      return;
+    }
+    if (!newOverride.employeeId || !newOverride.leaveType || !newOverride.reason.trim()) {
+      toast({ title: "Missing fields", description: "Employee, leave type and reason are required.", variant: "destructive" });
+      return;
+    }
+    const emp = EMPLOYEES.find(e => e.id === newOverride.employeeId);
+    if (!emp) return;
+    setOverrides(prev => [
+      { id: `OV-${Date.now()}`, employeeId: emp.id, employeeName: emp.name, leaveType: newOverride.leaveType, customQuota: newOverride.customQuota, reason: newOverride.reason, updatedOn: new Date().toISOString().split("T")[0], updatedBy: "HR Admin" },
+      ...prev,
+    ]);
+    setNewOverride({ employeeId: "", leaveType: "", customQuota: 0, reason: "" });
+    setOverrideDialog(false);
+    toast({ title: "Custom leave assigned", description: `${emp.name} • ${newOverride.leaveType}` });
+  };
+
+  const handleDeleteOverride = (id: string) => {
+    setOverrides(prev => prev.filter(o => o.id !== id));
+    toast({ title: "Custom leave removed" });
+  };
+
+  const sortOverride = (key: string) => {
+    setOverrideSort(prev => ({ key, dir: prev.key === key && prev.dir === "asc" ? "desc" : "asc" }));
+  };
+
+  const sortedOverrides = [...overrides].sort((a, b) => {
+    const av = (a as any)[overrideSort.key]; const bv = (b as any)[overrideSort.key];
+    const cmp = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv));
+    return overrideSort.dir === "asc" ? cmp : -cmp;
+  });
+
+  // Aggregated balances per employee per leave type (quota = override or policy default; used = approved days)
+  const activePolicies = policies.filter(p => p.active);
+  const employeeBalances = EMPLOYEES.map(emp => {
+    const types = activePolicies.map(p => {
+      const override = overrides.find(o => o.employeeId === emp.id && o.leaveType === p.name);
+      const quota = override ? override.customQuota : p.annualQuota;
+      const used = requests
+        .filter(r => r.employee === emp.name && r.type === p.name && r.status === "Approved")
+        .reduce((sum, r) => sum + r.days, 0);
+      return { type: p.name, quota, used, remaining: Math.max(0, quota - used), customized: !!override };
+    });
+    return { employee: emp, types };
+  });
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-4">
@@ -316,6 +387,7 @@ export default function LeaveManagement() {
                 <TabsTrigger value="requests" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"><FileText className="w-3.5 h-3.5" />Leave Requests</TabsTrigger>
                 <TabsTrigger value="holidays" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"><Calendar className="w-3.5 h-3.5" />Holidays</TabsTrigger>
                 {isHR && <TabsTrigger value="policies" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"><Settings2 className="w-3.5 h-3.5" />Leave Policies</TabsTrigger>}
+                {isHR && <TabsTrigger value="balances" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"><Users className="w-3.5 h-3.5" />Employee Balances</TabsTrigger>}
               </TabsList>
 
               {/* LEAVE REQUESTS */}
@@ -496,6 +568,123 @@ export default function LeaveManagement() {
                   </div>
                 </TabsContent>
               )}
+
+              {/* EMPLOYEE BALANCES (HR only) */}
+              {isHR && (
+                <TabsContent value="balances" className="space-y-4 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold">Employee Leave Balances</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">Customize leave quotas per employee with reason. Defaults come from active policies.</p>
+                    </div>
+                    <Dialog open={overrideDialog} onOpenChange={setOverrideDialog}>
+                      <DialogTrigger asChild><Button size="sm" className="gap-1.5 press-effect"><Plus className="w-3.5 h-3.5" />Customize Leave</Button></DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader><DialogTitle>Customize Employee Leave</DialogTitle></DialogHeader>
+                        <div className="space-y-3 pt-2">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Employee *</label>
+                            <Select value={newOverride.employeeId} onValueChange={v => setNewOverride({ ...newOverride, employeeId: v })}>
+                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select employee" /></SelectTrigger>
+                              <SelectContent>{EMPLOYEES.map(e => <SelectItem key={e.id} value={e.id}>{e.name} — {e.department}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Leave Type *</label>
+                            <Select value={newOverride.leaveType} onValueChange={v => setNewOverride({ ...newOverride, leaveType: v })}>
+                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select leave type" /></SelectTrigger>
+                              <SelectContent>{leaveTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                          <div><label className="text-xs text-muted-foreground mb-1 block">Custom Quota (days)</label><Input type="number" min={0} value={newOverride.customQuota} onChange={e => setNewOverride({ ...newOverride, customQuota: +e.target.value })} className="h-9 text-sm font-mono-data" /></div>
+                          <div><label className="text-xs text-muted-foreground mb-1 block">Reason *</label><Textarea value={newOverride.reason} onChange={e => setNewOverride({ ...newOverride, reason: e.target.value })} placeholder="Why this customization is needed..." className="text-sm min-h-[80px]" /></div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setOverrideDialog(false)}>Cancel</Button>
+                            <Button size="sm" onClick={handleSaveOverride}>Save Customization</Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  {/* Customizations table */}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <h4 className="text-sm font-medium">Active Customizations</h4>
+                      <span className="text-xs text-muted-foreground">{overrides.length} custom rule(s)</span>
+                    </div>
+                    {overrides.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-muted-foreground">No custom leave rules yet. Click "Customize Leave" to override an employee's quota.</div>
+                    ) : (
+                      <table className="nexus-table">
+                        <thead>
+                          <tr>
+                            {[
+                              { k: "employeeName", l: "Employee" },
+                              { k: "leaveType", l: "Leave Type" },
+                              { k: "customQuota", l: "Custom Quota" },
+                              { k: "reason", l: "Reason" },
+                              { k: "updatedOn", l: "Updated" },
+                            ].map(c => (
+                              <th key={c.k} className="cursor-pointer select-none" onClick={() => sortOverride(c.k)}>
+                                <span className="inline-flex items-center gap-1">{c.l}{overrideSort.key === c.k && <span className="text-[10px]">{overrideSort.dir === "asc" ? "▲" : "▼"}</span>}</span>
+                              </th>
+                            ))}
+                            <th className="w-24">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedOverrides.map(o => (
+                            <tr key={o.id}>
+                              <td className="text-sm font-medium">{o.employeeName}</td>
+                              <td className="text-sm text-muted-foreground">{o.leaveType}</td>
+                              <td className="font-mono-data text-xs">{o.customQuota} days</td>
+                              <td className="text-xs text-muted-foreground max-w-xs truncate" title={o.reason}>{o.reason}</td>
+                              <td className="font-mono-data text-xs text-muted-foreground">{o.updatedOn}</td>
+                              <td>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" className="h-6 px-1.5" onClick={() => setEditOverride({ ...o })}><Edit2 className="w-3 h-3" /></Button>
+                                  <Button variant="ghost" size="sm" className="h-6 px-1.5" onClick={() => handleDeleteOverride(o.id)}><Trash2 className="w-3 h-3 text-destructive" /></Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+
+                  {/* All employees balances */}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border"><h4 className="text-sm font-medium">All Employee Leave Balances</h4></div>
+                    <table className="nexus-table">
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Department</th>
+                          {activePolicies.map(p => <th key={p.id} className="text-center">{p.name}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employeeBalances.map(({ employee, types }) => (
+                          <tr key={employee.id}>
+                            <td className="text-sm font-medium">{employee.name}</td>
+                            <td className="text-xs text-muted-foreground">{employee.department}</td>
+                            {types.map(t => (
+                              <td key={t.type} className="text-center">
+                                <div className="inline-flex flex-col items-center">
+                                  <span className="font-mono-data text-xs"><span className="font-semibold">{t.remaining}</span><span className="text-muted-foreground">/{t.quota}</span></span>
+                                  {t.customized && <span className="text-[9px] mt-0.5 px-1 rounded bg-primary/10 text-primary">custom</span>}
+                                </div>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </TabsContent>
+              )}
             </Tabs>
           </motion.div>
         </>
@@ -611,6 +800,31 @@ export default function LeaveManagement() {
               <div className="flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => setEditPolicy(null)}>Cancel</Button>
                 <Button size="sm" onClick={handleSavePolicy}>Save Changes</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Override Dialog */}
+      <Dialog open={!!editOverride} onOpenChange={() => setEditOverride(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Edit Custom Leave</DialogTitle></DialogHeader>
+          {editOverride && (
+            <div className="space-y-3 pt-2">
+              <div><label className="text-xs text-muted-foreground mb-1 block">Employee</label><Input value={editOverride.employeeName} disabled className="h-9 text-sm" /></div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Leave Type</label>
+                <Select value={editOverride.leaveType} onValueChange={v => setEditOverride({ ...editOverride, leaveType: v })}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>{leaveTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><label className="text-xs text-muted-foreground mb-1 block">Custom Quota (days)</label><Input type="number" min={0} value={editOverride.customQuota} onChange={e => setEditOverride({ ...editOverride, customQuota: +e.target.value })} className="h-9 text-sm font-mono-data" /></div>
+              <div><label className="text-xs text-muted-foreground mb-1 block">Reason *</label><Textarea value={editOverride.reason} onChange={e => setEditOverride({ ...editOverride, reason: e.target.value })} className="text-sm min-h-[80px]" /></div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setEditOverride(null)}>Cancel</Button>
+                <Button size="sm" onClick={handleSaveOverride}>Save Changes</Button>
               </div>
             </div>
           )}
