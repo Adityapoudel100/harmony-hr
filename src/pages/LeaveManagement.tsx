@@ -672,7 +672,7 @@ export default function LeaveManagement() {
                       <thead>
                         <tr>
                           <th>Employee</th>
-                          <th>Department</th>
+                          
                           {activePolicies.map(p => <th key={p.id} className="text-center">{p.name}</th>)}
                         </tr>
                       </thead>
