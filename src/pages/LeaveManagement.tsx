@@ -263,16 +263,27 @@ export default function LeaveManagement() {
     return overrideSort.dir === "asc" ? cmp : -cmp;
   });
 
-  // Aggregated balances per employee per leave type (quota = override or policy default; used = approved days)
+  // Aggregated balances per employee per leave type.
+  // Pro-rata: accrued = months worked this year (capped at quota). Remaining can go negative => advance leave.
   const activePolicies = policies.filter(p => p.active);
+  const now = new Date();
+  const yearStart = new Date(now.getFullYear(), 0, 1);
   const employeeBalances = EMPLOYEES.map(emp => {
+    const join = emp.joinDate ? new Date(emp.joinDate) : yearStart;
+    const startRef = join > yearStart ? join : yearStart;
+    const monthsWorked = Math.max(
+      0,
+      (now.getFullYear() - startRef.getFullYear()) * 12 + (now.getMonth() - startRef.getMonth()) + 1,
+    );
     const types = activePolicies.map(p => {
       const override = overrides.find(o => o.employeeId === emp.id && o.leaveType === p.name);
       const quota = override ? override.customQuota : p.annualQuota;
+      const accrued = p.proRata ? Math.min(quota, monthsWorked) : quota;
       const used = requests
         .filter(r => r.employee === emp.name && r.type === p.name && r.status === "Approved")
         .reduce((sum, r) => sum + r.days, 0);
-      return { type: p.name, quota, used, remaining: Math.max(0, quota - used), customized: !!override };
+      const remaining = accrued - used; // can be negative => advance leave
+      return { type: p.name, quota, accrued, used, remaining, advance: remaining < 0 ? Math.abs(remaining) : 0, proRata: p.proRata, customized: !!override };
     });
     return { employee: emp, types };
   });
@@ -672,9 +683,15 @@ export default function LeaveManagement() {
                             <td className="text-xs text-muted-foreground">{employee.department}</td>
                             {types.map(t => (
                               <td key={t.type} className="text-center">
-                                <div className="inline-flex flex-col items-center">
-                                  <span className="font-mono-data text-xs"><span className="font-semibold">{t.remaining}</span><span className="text-muted-foreground">/{t.quota}</span></span>
-                                  {t.customized && <span className="text-[9px] mt-0.5 px-1 rounded bg-primary/10 text-primary">custom</span>}
+                                <div className="inline-flex flex-col items-center" title={t.proRata ? `Accrued ${t.accrued} of ${t.quota} (pro-rata)` : `Quota ${t.quota}`}>
+                                  <span className="font-mono-data text-xs">
+                                    <span className={`font-semibold ${t.remaining < 0 ? "text-destructive" : ""}`}>{t.remaining}</span>
+                                    <span className="text-muted-foreground">/{t.proRata ? t.accrued : t.quota}</span>
+                                  </span>
+                                  <div className="flex gap-1 mt-0.5">
+                                    {t.customized && <span className="text-[9px] px-1 rounded bg-primary/10 text-primary">custom</span>}
+                                    {t.advance > 0 && <span className="text-[9px] px-1 rounded bg-destructive/10 text-destructive">advance {t.advance}d</span>}
+                                  </div>
                                 </div>
                               </td>
                             ))}
