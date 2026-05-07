@@ -225,6 +225,58 @@ export default function LeaveManagement() {
     toast({ title: "Leave policy deleted" });
   };
 
+  // Override handlers
+  const handleSaveOverride = () => {
+    if (editOverride) {
+      setOverrides(prev => prev.map(o => o.id === editOverride.id ? { ...editOverride, updatedOn: new Date().toISOString().split("T")[0] } : o));
+      setEditOverride(null);
+      toast({ title: "Custom leave updated" });
+      return;
+    }
+    if (!newOverride.employeeId || !newOverride.leaveType || !newOverride.reason.trim()) {
+      toast({ title: "Missing fields", description: "Employee, leave type and reason are required.", variant: "destructive" });
+      return;
+    }
+    const emp = EMPLOYEES.find(e => e.id === newOverride.employeeId);
+    if (!emp) return;
+    setOverrides(prev => [
+      { id: `OV-${Date.now()}`, employeeId: emp.id, employeeName: emp.name, leaveType: newOverride.leaveType, customQuota: newOverride.customQuota, reason: newOverride.reason, updatedOn: new Date().toISOString().split("T")[0], updatedBy: "HR Admin" },
+      ...prev,
+    ]);
+    setNewOverride({ employeeId: "", leaveType: "", customQuota: 0, reason: "" });
+    setOverrideDialog(false);
+    toast({ title: "Custom leave assigned", description: `${emp.name} • ${newOverride.leaveType}` });
+  };
+
+  const handleDeleteOverride = (id: string) => {
+    setOverrides(prev => prev.filter(o => o.id !== id));
+    toast({ title: "Custom leave removed" });
+  };
+
+  const sortOverride = (key: string) => {
+    setOverrideSort(prev => ({ key, dir: prev.key === key && prev.dir === "asc" ? "desc" : "asc" }));
+  };
+
+  const sortedOverrides = [...overrides].sort((a, b) => {
+    const av = (a as any)[overrideSort.key]; const bv = (b as any)[overrideSort.key];
+    const cmp = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv));
+    return overrideSort.dir === "asc" ? cmp : -cmp;
+  });
+
+  // Aggregated balances per employee per leave type (quota = override or policy default; used = approved days)
+  const activePolicies = policies.filter(p => p.active);
+  const employeeBalances = EMPLOYEES.map(emp => {
+    const types = activePolicies.map(p => {
+      const override = overrides.find(o => o.employeeId === emp.id && o.leaveType === p.name);
+      const quota = override ? override.customQuota : p.annualQuota;
+      const used = requests
+        .filter(r => r.employee === emp.name && r.type === p.name && r.status === "Approved")
+        .reduce((sum, r) => sum + r.days, 0);
+      return { type: p.name, quota, used, remaining: Math.max(0, quota - used), customized: !!override };
+    });
+    return { employee: emp, types };
+  });
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-4">
       {selectedRequest ? (
