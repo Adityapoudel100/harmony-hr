@@ -263,16 +263,27 @@ export default function LeaveManagement() {
     return overrideSort.dir === "asc" ? cmp : -cmp;
   });
 
-  // Aggregated balances per employee per leave type (quota = override or policy default; used = approved days)
+  // Aggregated balances per employee per leave type.
+  // Pro-rata: accrued = months worked this year (capped at quota). Remaining can go negative => advance leave.
   const activePolicies = policies.filter(p => p.active);
+  const now = new Date();
+  const yearStart = new Date(now.getFullYear(), 0, 1);
   const employeeBalances = EMPLOYEES.map(emp => {
+    const join = emp.joinDate ? new Date(emp.joinDate) : yearStart;
+    const startRef = join > yearStart ? join : yearStart;
+    const monthsWorked = Math.max(
+      0,
+      (now.getFullYear() - startRef.getFullYear()) * 12 + (now.getMonth() - startRef.getMonth()) + 1,
+    );
     const types = activePolicies.map(p => {
       const override = overrides.find(o => o.employeeId === emp.id && o.leaveType === p.name);
       const quota = override ? override.customQuota : p.annualQuota;
+      const accrued = p.proRata ? Math.min(quota, monthsWorked) : quota;
       const used = requests
         .filter(r => r.employee === emp.name && r.type === p.name && r.status === "Approved")
         .reduce((sum, r) => sum + r.days, 0);
-      return { type: p.name, quota, used, remaining: Math.max(0, quota - used), customized: !!override };
+      const remaining = accrued - used; // can be negative => advance leave
+      return { type: p.name, quota, accrued, used, remaining, advance: remaining < 0 ? Math.abs(remaining) : 0, proRata: p.proRata, customized: !!override };
     });
     return { employee: emp, types };
   });
