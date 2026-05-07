@@ -387,6 +387,7 @@ export default function LeaveManagement() {
                 <TabsTrigger value="requests" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"><FileText className="w-3.5 h-3.5" />Leave Requests</TabsTrigger>
                 <TabsTrigger value="holidays" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"><Calendar className="w-3.5 h-3.5" />Holidays</TabsTrigger>
                 {isHR && <TabsTrigger value="policies" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"><Settings2 className="w-3.5 h-3.5" />Leave Policies</TabsTrigger>}
+                {isHR && <TabsTrigger value="balances" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"><Users className="w-3.5 h-3.5" />Employee Balances</TabsTrigger>}
               </TabsList>
 
               {/* LEAVE REQUESTS */}
