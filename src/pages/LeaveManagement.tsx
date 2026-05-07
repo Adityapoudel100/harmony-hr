@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CalendarDays, Plus, ArrowLeft, Clock, User, FileText, Edit2, Trash2, Settings2, Calendar } from "lucide-react";
+import { CalendarDays, Plus, ArrowLeft, Clock, User, FileText, Edit2, Trash2, Settings2, Calendar, Users } from "lucide-react";
+import { EMPLOYEES } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
