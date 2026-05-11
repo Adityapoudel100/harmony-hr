@@ -66,6 +66,10 @@ export default function Payroll() {
   const [slipFilterMonth, setSlipFilterMonth] = useState("all");
   const [slipFilterYear, setSlipFilterYear] = useState("all");
 
+  // Yearly summary
+  const [summaryYear, setSummaryYear] = useState<string>(year);
+  const [summaryMetric, setSummaryMetric] = useState<"netPay" | "totalIncome" | "monthlyTax" | "ssf31">("netPay");
+
   const results = useMemo(() => {
     if (!processed) return [];
     return employees.map(emp => calculatePayroll(emp, fyKey, workingDays));
