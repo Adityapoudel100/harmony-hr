@@ -643,6 +643,11 @@ export default function Payroll() {
             ))}
           </TabsContent>
 
+          {/* SALARY & CONTRACTS */}
+          <TabsContent value="contracts" className="space-y-4 mt-4">
+            <SalaryContracts />
+          </TabsContent>
+
           {/* CUSTOM FORMULA BUILDER */}
           <TabsContent value="formulas" className="space-y-4 mt-4">
             <FormulaBuilder sampleEmployees={employees} fyKey={fyKey} workingDays={workingDays} />
