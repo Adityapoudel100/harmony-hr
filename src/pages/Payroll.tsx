@@ -16,6 +16,7 @@ import {
   type PayrollEmployee, type PayrollResult, type TaxpayerType, type Gender, type FYData, type TaxSlab
 } from "@/lib/payroll-engine";
 import FormulaBuilder from "@/components/payroll/FormulaBuilder";
+import SalaryContracts from "@/components/payroll/SalaryContracts";
 
 const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
