@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Calculator, Plus, Trash2, Download, FileText, Users, DollarSign,
-  AlertCircle, CheckCircle2, Save, Eye, X, Receipt, Settings2, Edit2, CalendarClock
+  AlertCircle, CheckCircle2, Save, Eye, X, Receipt, Settings2, Edit2, CalendarClock, TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,10 @@ export default function Payroll() {
   // Payslip filter
   const [slipFilterMonth, setSlipFilterMonth] = useState("all");
   const [slipFilterYear, setSlipFilterYear] = useState("all");
+
+  // Yearly summary
+  const [summaryYear, setSummaryYear] = useState<string>(year);
+  const [summaryMetric, setSummaryMetric] = useState<"netPay" | "totalIncome" | "monthlyTax" | "ssf31">("netPay");
 
   const results = useMemo(() => {
     if (!processed) return [];
@@ -319,6 +323,9 @@ export default function Payroll() {
             </TabsTrigger>
             <TabsTrigger value="taxslab" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Settings2 className="w-3.5 h-3.5" />Tax Slab
+            </TabsTrigger>
+            <TabsTrigger value="yearly" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <TrendingUp className="w-3.5 h-3.5" />Yearly Summary
             </TabsTrigger>
             <TabsTrigger value="contracts" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <CalendarClock className="w-3.5 h-3.5" />Salary & Contracts
@@ -641,6 +648,146 @@ export default function Payroll() {
                 </div>
               </div>
             ))}
+          </TabsContent>
+
+          {/* YEARLY SUMMARY */}
+          <TabsContent value="yearly" className="space-y-4 mt-4">
+            {(() => {
+              const years = uniqueYears.length ? uniqueYears : [year];
+              const activeYear = years.includes(summaryYear) ? summaryYear : years[0];
+              const yearSlips = savedSlips.filter(s => s.year === activeYear);
+              const empMap = new Map<string, Record<string, PayrollResult>>();
+              yearSlips.forEach(s => {
+                if (!empMap.has(s.empName)) empMap.set(s.empName, {});
+                empMap.get(s.empName)![s.month] = s.result;
+              });
+              const metricLabel = { netPay: "Net Pay", totalIncome: "Gross Pay", monthlyTax: "Tax (TDS)", ssf31: "SSF (31%)" }[summaryMetric];
+              const metricColor = { netPay: "text-success", totalIncome: "text-primary", monthlyTax: "text-destructive", ssf31: "text-destructive" }[summaryMetric];
+
+              const exportYearly = () => {
+                const cols = ["Employee", ...NEPALI_MONTHS, "SSF Total", "Gross Total", "Tax Total", "Net Total"];
+                const rows: (string | number)[][] = [];
+                empMap.forEach((months, name) => {
+                  const monthVals = NEPALI_MONTHS.map(m => months[m] ? Math.round(months[m][summaryMetric]) : 0);
+                  let ssfT = 0, grossT = 0, taxT = 0, netT = 0;
+                  Object.values(months).forEach(r => { ssfT += r.ssf31; grossT += r.totalIncome; taxT += r.monthlyTax; netT += r.netPay; });
+                  rows.push([name, ...monthVals, Math.round(ssfT), Math.round(grossT), Math.round(taxT), Math.round(netT)]);
+                });
+                const csv = [cols, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+                download(csv, `Yearly_Summary_${metricLabel}_${activeYear}.csv`);
+              };
+
+              return (
+                <>
+                  <div className="bg-card border border-border rounded-lg p-4 flex flex-wrap items-end gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Year</label>
+                      <Select value={activeYear} onValueChange={setSummaryYear}>
+                        <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>{years.map(y => <SelectItem key={y} value={y} className="text-xs">{y}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Metric</label>
+                      <Select value={summaryMetric} onValueChange={v => setSummaryMetric(v as typeof summaryMetric)}>
+                        <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ssf31" className="text-xs">SSF (31%)</SelectItem>
+                          <SelectItem value="totalIncome" className="text-xs">Gross Pay</SelectItem>
+                          <SelectItem value="monthlyTax" className="text-xs">Tax (TDS)</SelectItem>
+                          <SelectItem value="netPay" className="text-xs">Net Pay</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="ml-auto">
+                      <Button variant="outline" size="sm" className="gap-1 text-xs h-8 press-effect" onClick={exportYearly} disabled={!empMap.size}>
+                        <Download className="w-3 h-3" />Export CSV
+                      </Button>
+                    </div>
+                  </div>
+
+                  {empMap.size === 0 ? (
+                    <div className="bg-card border border-border rounded-lg p-12 text-center">
+                      <TrendingUp className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-sm font-medium text-muted-foreground">No saved payroll data for {activeYear}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Process payroll and click "Save Month" to populate this view.</p>
+                    </div>
+                  ) : (
+                    <div className="bg-card border border-border rounded-lg overflow-hidden">
+                      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                        <h3 className="text-sm font-semibold">Yearly Summary — {metricLabel} · {activeYear}</h3>
+                        <span className="text-[10px] text-muted-foreground font-mono-data">{empMap.size} employees</span>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="nexus-table" style={{ minWidth: "1500px" }}>
+                          <thead>
+                            <tr>
+                              <th className="sticky left-0 bg-card z-10">Employee</th>
+                              {NEPALI_MONTHS.map(m => <th key={m} className="text-right">{m.slice(0, 3)}</th>)}
+                              <th className="text-right">SSF Total</th>
+                              <th className="text-right">Gross Total</th>
+                              <th className="text-right">Tax Total</th>
+                              <th className="text-right">Net Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Array.from(empMap.entries()).map(([name, months]) => {
+                              let ssfT = 0, grossT = 0, taxT = 0, netT = 0;
+                              Object.values(months).forEach(r => { ssfT += r.ssf31; grossT += r.totalIncome; taxT += r.monthlyTax; netT += r.netPay; });
+                              return (
+                                <tr key={name}>
+                                  <td className="sticky left-0 bg-card z-10">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary shrink-0">
+                                        {name.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase()}
+                                      </div>
+                                      <p className="text-xs font-medium whitespace-nowrap">{name}</p>
+                                    </div>
+                                  </td>
+                                  {NEPALI_MONTHS.map(m => {
+                                    const r = months[m];
+                                    return (
+                                      <td key={m} className={`font-mono-data text-xs text-right ${r ? metricColor : "text-muted-foreground/40"}`}>
+                                        {r ? fmt(r[summaryMetric]) : "—"}
+                                      </td>
+                                    );
+                                  })}
+                                  <td className="font-mono-data text-xs text-right text-destructive">{fmt(ssfT)}</td>
+                                  <td className="font-mono-data text-xs text-right text-primary">{fmt(grossT)}</td>
+                                  <td className="font-mono-data text-xs text-right text-destructive">{fmt(taxT)}</td>
+                                  <td className="font-mono-data text-xs text-right font-semibold text-success">{fmt(netT)}</td>
+                                </tr>
+                              );
+                            })}
+                            {(() => {
+                              const colTotals = NEPALI_MONTHS.map(m => {
+                                let v = 0;
+                                empMap.forEach(months => { if (months[m]) v += months[m][summaryMetric]; });
+                                return v;
+                              });
+                              let ssfG = 0, grossG = 0, taxG = 0, netG = 0;
+                              empMap.forEach(months => Object.values(months).forEach(r => { ssfG += r.ssf31; grossG += r.totalIncome; taxG += r.monthlyTax; netG += r.netPay; }));
+                              return (
+                                <tr className="bg-muted/30 font-semibold">
+                                  <td className="sticky left-0 bg-muted/60 z-10 text-xs">Total</td>
+                                  {colTotals.map((v, i) => (
+                                    <td key={i} className={`font-mono-data text-xs text-right ${metricColor}`}>{v ? fmt(v) : "—"}</td>
+                                  ))}
+                                  <td className="font-mono-data text-xs text-right text-destructive">{fmt(ssfG)}</td>
+                                  <td className="font-mono-data text-xs text-right text-primary">{fmt(grossG)}</td>
+                                  <td className="font-mono-data text-xs text-right text-destructive">{fmt(taxG)}</td>
+                                  <td className="font-mono-data text-xs text-right text-success">{fmt(netG)}</td>
+                                </tr>
+                              );
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </TabsContent>
 
           {/* SALARY & CONTRACTS */}
