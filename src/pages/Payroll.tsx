@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Calculator, Plus, Trash2, Download, FileText, Users, DollarSign,
-  AlertCircle, CheckCircle2, Save, Eye, X, Receipt, Settings2, Edit2
+  AlertCircle, CheckCircle2, Save, Eye, X, Receipt, Settings2, Edit2, CalendarClock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   type PayrollEmployee, type PayrollResult, type TaxpayerType, type Gender, type FYData, type TaxSlab
 } from "@/lib/payroll-engine";
 import FormulaBuilder from "@/components/payroll/FormulaBuilder";
+import SalaryContracts from "@/components/payroll/SalaryContracts";
 
 const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
@@ -318,6 +319,9 @@ export default function Payroll() {
             </TabsTrigger>
             <TabsTrigger value="taxslab" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Settings2 className="w-3.5 h-3.5" />Tax Slab
+            </TabsTrigger>
+            <TabsTrigger value="contracts" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <CalendarClock className="w-3.5 h-3.5" />Salary & Contracts
             </TabsTrigger>
             <TabsTrigger value="formulas" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Calculator className="w-3.5 h-3.5" />Formula Builder
@@ -637,6 +641,11 @@ export default function Payroll() {
                 </div>
               </div>
             ))}
+          </TabsContent>
+
+          {/* SALARY & CONTRACTS */}
+          <TabsContent value="contracts" className="space-y-4 mt-4">
+            <SalaryContracts />
           </TabsContent>
 
           {/* CUSTOM FORMULA BUILDER */}
