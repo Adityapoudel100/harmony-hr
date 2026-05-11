@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Calculator, Plus, Trash2, Download, FileText, Users, DollarSign,
-  AlertCircle, CheckCircle2, Save, Eye, X, Receipt, Settings2, Edit2, CalendarClock
+  AlertCircle, CheckCircle2, Save, Eye, X, Receipt, Settings2, Edit2, CalendarClock, TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
