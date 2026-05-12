@@ -345,6 +345,15 @@ export default function Payroll() {
             <TabsTrigger value="formulas" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Calculator className="w-3.5 h-3.5" />Formula Builder
             </TabsTrigger>
+            <TabsTrigger value="loans" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <Wallet className="w-3.5 h-3.5" />Loans & Advances
+            </TabsTrigger>
+            <TabsTrigger value="approvals" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <ClipboardCheck className="w-3.5 h-3.5" />Approvals
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <ScrollText className="w-3.5 h-3.5" />Audit Log
+            </TabsTrigger>
           </TabsList>
 
           {/* BULK PAYROLL */}
