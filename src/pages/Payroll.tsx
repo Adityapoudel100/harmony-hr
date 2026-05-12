@@ -820,6 +820,18 @@ export default function Payroll() {
           <TabsContent value="formulas" className="space-y-4 mt-4">
             <FormulaBuilder sampleEmployees={employees} fyKey={fyKey} workingDays={workingDays} />
           </TabsContent>
+
+          <TabsContent value="loans" className="space-y-4 mt-4">
+            <LoansAdvances />
+          </TabsContent>
+
+          <TabsContent value="approvals" className="space-y-4 mt-4">
+            <PayrollApprovals />
+          </TabsContent>
+
+          <TabsContent value="audit" className="space-y-4 mt-4">
+            <PayrollAuditLog />
+          </TabsContent>
         </Tabs>
       </motion.div>
 
