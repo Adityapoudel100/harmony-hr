@@ -18,6 +18,9 @@ import {
 } from "@/lib/payroll-engine";
 import FormulaBuilder from "@/components/payroll/FormulaBuilder";
 import SalaryContracts from "@/components/payroll/SalaryContracts";
+import LoansAdvances from "@/components/payroll/LoansAdvances";
+import PayrollApprovals, { upsertDraftRun } from "@/components/payroll/PayrollApprovals";
+import PayrollAuditLog from "@/components/payroll/PayrollAuditLog";
 
 const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
