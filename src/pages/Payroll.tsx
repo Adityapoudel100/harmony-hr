@@ -2,7 +2,8 @@ import { useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Calculator, Plus, Trash2, Download, FileText, Users, DollarSign,
-  AlertCircle, CheckCircle2, Save, Eye, X, Receipt, Settings2, Edit2, CalendarClock, TrendingUp
+  AlertCircle, CheckCircle2, Save, Eye, X, Receipt, Settings2, Edit2, CalendarClock, TrendingUp,
+  Wallet, ClipboardCheck, ScrollText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,9 @@ import {
 } from "@/lib/payroll-engine";
 import FormulaBuilder from "@/components/payroll/FormulaBuilder";
 import SalaryContracts from "@/components/payroll/SalaryContracts";
+import LoansAdvances from "@/components/payroll/LoansAdvances";
+import PayrollApprovals, { upsertDraftRun } from "@/components/payroll/PayrollApprovals";
+import PayrollAuditLog from "@/components/payroll/PayrollAuditLog";
 
 const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
@@ -99,7 +103,15 @@ export default function Payroll() {
     const monthName = NEPALI_MONTHS[parseInt(month) - 1];
     const newSlips = results.map(r => ({ empName: r.name, month: monthName, year, result: r }));
     setSavedSlips(prev => [...prev.filter(s => !(s.month === monthName && s.year === year)), ...newSlips]);
-    toast({ title: "Month saved", description: `${newSlips.length} payslips saved for ${monthName} ${year}` });
+    upsertDraftRun({
+      month: monthName,
+      year,
+      employeeCount: results.length,
+      totalGross: totals.totalIncome,
+      totalTax: totals.totalTax,
+      totalNet: totals.totalNet,
+    });
+    toast({ title: "Month saved", description: `${newSlips.length} payslips saved · draft run created for approval` });
   };
 
   const exportCSV = () => {
@@ -332,6 +344,15 @@ export default function Payroll() {
             </TabsTrigger>
             <TabsTrigger value="formulas" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Calculator className="w-3.5 h-3.5" />Formula Builder
+            </TabsTrigger>
+            <TabsTrigger value="loans" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <Wallet className="w-3.5 h-3.5" />Loans & Advances
+            </TabsTrigger>
+            <TabsTrigger value="approvals" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <ClipboardCheck className="w-3.5 h-3.5" />Approvals
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="gap-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <ScrollText className="w-3.5 h-3.5" />Audit Log
             </TabsTrigger>
           </TabsList>
 
@@ -798,6 +819,18 @@ export default function Payroll() {
           {/* CUSTOM FORMULA BUILDER */}
           <TabsContent value="formulas" className="space-y-4 mt-4">
             <FormulaBuilder sampleEmployees={employees} fyKey={fyKey} workingDays={workingDays} />
+          </TabsContent>
+
+          <TabsContent value="loans" className="space-y-4 mt-4">
+            <LoansAdvances />
+          </TabsContent>
+
+          <TabsContent value="approvals" className="space-y-4 mt-4">
+            <PayrollApprovals />
+          </TabsContent>
+
+          <TabsContent value="audit" className="space-y-4 mt-4">
+            <PayrollAuditLog />
           </TabsContent>
         </Tabs>
       </motion.div>
