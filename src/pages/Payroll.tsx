@@ -103,7 +103,15 @@ export default function Payroll() {
     const monthName = NEPALI_MONTHS[parseInt(month) - 1];
     const newSlips = results.map(r => ({ empName: r.name, month: monthName, year, result: r }));
     setSavedSlips(prev => [...prev.filter(s => !(s.month === monthName && s.year === year)), ...newSlips]);
-    toast({ title: "Month saved", description: `${newSlips.length} payslips saved for ${monthName} ${year}` });
+    upsertDraftRun({
+      month: monthName,
+      year,
+      employeeCount: results.length,
+      totalGross: totals.totalIncome,
+      totalTax: totals.totalTax,
+      totalNet: totals.totalNet,
+    });
+    toast({ title: "Month saved", description: `${newSlips.length} payslips saved · draft run created for approval` });
   };
 
   const exportCSV = () => {
